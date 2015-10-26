@@ -1,0 +1,688 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="440"
+   height="310"
+   id="svg4218"
+   version="1.1"
+   inkscape:version="0.48+devel r"
+   sodipodi:docname="Yee-cube.svg"
+   inkscape:export-filename="/home/john/Desktop/3D Yee Code/yee-crbc-testing/documentation/cell.png"
+   inkscape:export-xdpi="212.61761"
+   inkscape:export-ydpi="212.61761">
+  <metadata
+     id="metadata4389">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs4387" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1721"
+     inkscape:window-height="878"
+     id="namedview4385"
+     showgrid="false"
+     inkscape:zoom="1.8449059"
+     inkscape:cx="116.0966"
+     inkscape:cy="89.956031"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg4218" />
+  <g
+     id="cvpage1_top"
+     width="440px"
+     height="310px"
+     transform="translate(0,0)">
+    <line
+       x1="64.148px"
+       y1="262.012px"
+       x2="237.648px"
+       y2="262.012px"
+       fill="none"
+       stroke="#000"
+       id="line4221" />
+    <line
+       x1="64.648px"
+       y1="262.517px"
+       x2="64.648px"
+       y2="88.512px"
+       fill="none"
+       stroke="#000"
+       id="line4223" />
+    <line
+       x1="171.648px"
+       y1="193.512px"
+       x2="345.148px"
+       y2="193.512px"
+       fill="none"
+       stroke="#7F7F7F"
+       id="line4225" />
+    <line
+       x1="171.648px"
+       y1="20.012px"
+       x2="345.148px"
+       y2="20.012px"
+       fill="none"
+       stroke="#000"
+       id="line4227" />
+    <line
+       x1="345.648px"
+       y1="194.518px"
+       x2="345.648px"
+       y2="20.012px"
+       fill="none"
+       stroke="#000"
+       id="line4229" />
+    <line
+       x1="171.648px"
+       y1="194.018px"
+       x2="171.648px"
+       y2="19.512px"
+       fill="none"
+       stroke="#7F7F7F"
+       id="line4231" />
+    <line
+       x1="237.261px"
+       y1="262.517px"
+       x2="345.014px"
+       y2="193.512px"
+       fill="none"
+       stroke="#000"
+       id="line4233" />
+    <line
+       x1="65.322px"
+       y1="261.517px"
+       x2="171.514px"
+       y2="193.512px"
+       fill="none"
+       stroke="#7F7F7F"
+       id="line4235" />
+    <line
+       x1="140.158px"
+       y1="255.012px"
+       x2="161.639px"
+       y2="262.012px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4237" />
+    <line
+       x1="140.158px"
+       y1="269.012px"
+       x2="161.639px"
+       y2="262.012px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4239" />
+    <line
+       x1="247.658px"
+       y1="186.512px"
+       x2="269.139px"
+       y2="193.512px"
+       fill="none"
+       stroke="#FF3838"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4241" />
+    <line
+       x1="247.658px"
+       y1="200.512px"
+       x2="269.139px"
+       y2="193.512px"
+       fill="none"
+       stroke="#FF3838"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4243" />
+    <line
+       x1="64.148px"
+       y1="88.512px"
+       x2="237.648px"
+       y2="88.512px"
+       fill="none"
+       stroke="#000"
+       id="line4245" />
+    <line
+       x1="238.148px"
+       y1="262.517px"
+       x2="238.148px"
+       y2="88.512px"
+       fill="none"
+       stroke="#000"
+       id="line4247" />
+    <line
+       x1="237.261px"
+       y1="89.017px"
+       x2="345.014px"
+       y2="20.012px"
+       fill="none"
+       stroke="#000"
+       id="line4249" />
+    <line
+       x1="65.322px"
+       y1="88.017px"
+       x2="171.514px"
+       y2="20.012px"
+       fill="none"
+       stroke="#000"
+       id="line4251" />
+    <line
+       x1="140.158px"
+       y1="81.512px"
+       x2="161.639px"
+       y2="88.512px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4253" />
+    <line
+       x1="140.158px"
+       y1="95.512px"
+       x2="161.639px"
+       y2="88.512px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4255" />
+    <line
+       x1="247.658px"
+       y1="13.012px"
+       x2="269.139px"
+       y2="20.012px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4257" />
+    <line
+       x1="247.658px"
+       y1="27.012px"
+       x2="269.139px"
+       y2="20.012px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4259" />
+    <line
+       x1="231.148px"
+       y1="186.287px"
+       x2="238.148px"
+       y2="164.743px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4261" />
+    <line
+       x1="245.148px"
+       y1="186.287px"
+       x2="238.148px"
+       y2="164.743px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4263" />
+    <line
+       x1="338.648px"
+       y1="118.068px"
+       x2="345.648px"
+       y2="96.462px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4265" />
+    <line
+       x1="352.648px"
+       y1="118.068px"
+       x2="345.648px"
+       y2="96.462px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4267" />
+    <line
+       x1="277.467px"
+       y1="232.287px"
+       x2="297.808px"
+       y2="223.743px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4269" />
+    <line
+       x1="291.467px"
+       y1="232.287px"
+       x2="297.808px"
+       y2="223.743px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4271" />
+    <line
+       x1="57.648px"
+       y1="186.287px"
+       x2="64.648px"
+       y2="164.743px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4273" />
+    <line
+       x1="71.648px"
+       y1="186.287px"
+       x2="64.648px"
+       y2="164.743px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4275" />
+    <line
+       x1="104.844px"
+       y1="58.225px"
+       x2="124.992px"
+       y2="49.805px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4277" />
+    <line
+       x1="118.844px"
+       y1="58.225px"
+       x2="124.992px"
+       y2="49.805px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4279" />
+    <line
+       x1="164.648px"
+       y1="117.568px"
+       x2="171.648px"
+       y2="95.962px"
+       fill="none"
+       stroke="#FF3838"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4281" />
+    <line
+       x1="178.648px"
+       y1="117.568px"
+       x2="171.648px"
+       y2="95.962px"
+       fill="none"
+       stroke="#FF3838"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4283" />
+    <line
+       x1="277.467px"
+       y1="58.787px"
+       x2="297.808px"
+       y2="50.243px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4285" />
+    <line
+       x1="291.467px"
+       y1="58.787px"
+       x2="297.808px"
+       y2="50.243px"
+       fill="none"
+       stroke="#F00"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4287" />
+    <line
+       x1="104.844px"
+       y1="231.725px"
+       x2="124.992px"
+       y2="223.305px"
+       fill="none"
+       stroke="#FF3838"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4289" />
+    <line
+       x1="118.844px"
+       y1="231.725px"
+       x2="124.992px"
+       y2="223.305px"
+       fill="none"
+       stroke="#FF3838"
+       stroke-width="2px"
+       stroke-miterlimit="14.335"
+       id="line4291" />
+    <line
+       x1="291.648px"
+       y1="141.018px"
+       x2="336.148px"
+       y2="141.018px"
+       fill="none"
+       stroke="#1F00FF"
+       id="line4293" />
+    <polyline
+       points="338.648,140.768 323.648,146.18 323.648,135.355 338.648,140.768 "
+       fill="#6A55FF"
+       stroke="none"
+       id="polyline4295" />
+    <polygon
+       points="338.648,140.768 323.648,146.18 323.648,135.355 338.648,140.768 "
+       fill="none"
+       stroke="#1F00FF"
+       id="polygon4297" />
+    <line
+       x1="113.648px"
+       y1="141.018px"
+       x2="158.148px"
+       y2="141.018px"
+       fill="none"
+       stroke="#5138FF"
+       id="line4299" />
+    <polyline
+       points="160.648,140.768 145.648,146.18 145.648,135.355 160.648,140.768 "
+       fill="#B5AAFF"
+       stroke="none"
+       id="polyline4301" />
+    <polygon
+       points="160.648,140.768 145.648,146.18 145.648,135.355 160.648,140.768 "
+       fill="none"
+       stroke="#5138FF"
+       id="polygon4303" />
+    <line
+       x1="204.811px"
+       y1="228.355px"
+       x2="204.811px"
+       y2="183.855px"
+       fill="none"
+       stroke="#5138FF"
+       id="line4305" />
+    <polyline
+       points="204.561,181.355 209.974,196.355 199.148,196.355 204.561,181.355 "
+       fill="#B5AAFF"
+       stroke="none"
+       id="polyline4307" />
+    <polygon
+       points="204.561,181.355 209.974,196.355 199.148,196.355 204.561,181.355 "
+       fill="none"
+       stroke="#5138FF"
+       id="polygon4309" />
+    <line
+       x1="205.099px"
+       y1="55.094px"
+       x2="205.099px"
+       y2="10.594px"
+       fill="none"
+       stroke="#1F00FF"
+       id="line4311" />
+    <polyline
+       points="204.849,8.094 210.262,23.094 199.436,23.094 204.849,8.094 "
+       fill="#6A55FF"
+       stroke="none"
+       id="polyline4313" />
+    <polygon
+       points="204.849,8.094 210.262,23.094 199.436,23.094 204.849,8.094 "
+       fill="none"
+       stroke="#1F00FF"
+       id="polygon4315" />
+    <line
+       x1="258.071px"
+       y1="107.409px"
+       x2="295.076px"
+       y2="82.693px"
+       fill="none"
+       stroke="#5138FF"
+       id="line4317" />
+    <polyline
+       points="296.888,81.256 290.196,90.639 278.632,88.535 296.888,81.256 "
+       fill="#B5AAFF"
+       stroke="none"
+       id="polyline4319" />
+    <polygon
+       points="296.888,81.256 290.196,90.639 278.632,88.535 296.888,81.256 "
+       fill="none"
+       stroke="#5138FF"
+       id="polygon4321" />
+    <line
+       x1="150.331px"
+       y1="175.558px"
+       x2="187.337px"
+       y2="150.842px"
+       fill="none"
+       stroke="#1F00FF"
+       id="line4323" />
+    <polyline
+       points="189.149,149.405 182.457,158.788 170.893,156.684 189.149,149.405 "
+       fill="#6A55FF"
+       stroke="none"
+       id="polyline4325" />
+    <polygon
+       points="189.149,149.405 182.457,158.788 170.893,156.684 189.149,149.405 "
+       fill="none"
+       stroke="#1F00FF"
+       id="polygon4327" />
+    <g
+       transform="translate(25.148,265.517)"
+       font-size="14px"
+       font-family="Times, serif"
+       style="border: 29px solid #FF9F54; line-height: 58px;"
+       id="g4329">
+      <text
+         x="0px"
+         y="14px"
+         style="border: 0px solid #000000; line-height: 14px;"
+         id="text4331">
+            (i, j, k)
+         </text>
+    </g>
+    <g
+       transform="translate(215.148,265.517)"
+       font-size="14px"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185406px;"
+       id="g4333">
+      <text
+         x="0px"
+         y="14px"
+         style="border: 0px solid #000000; line-height: 14px;"
+         id="text4335"
+         inkscape:export-xdpi="1808.3014"
+         inkscape:export-ydpi="1808.3014">
+            (i+1, j, k)
+         </text>
+    </g>
+    <g
+       transform="translate(5.648,82.017)"
+       font-size="14px"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185406px;"
+       id="g4337">
+      <text
+         x="0px"
+         y="14px"
+         style="border: 0px solid #000000; line-height: 14px;"
+         id="text4339">
+            (i, j, k+1)
+         </text>
+    </g>
+    <g
+       transform="translate(347.648,189.518)"
+       font-size="14px"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185406px;"
+       id="g4341">
+      <text
+         x="0px"
+         y="14px"
+         style="border: 0px solid #000000; line-height: 14px;"
+         id="text4343">
+            (i+1, j+1, k)
+         </text>
+    </g>
+    <g
+       transform="translate(347.648,9.518)"
+       font-size="14px"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185406px;"
+       id="g4345">
+      <text
+         x="0px"
+         y="14px"
+         style="border: 0px solid #000000; line-height: 14px;"
+         id="text4347">
+            (i+1, j+1, k+1)
+         </text>
+    </g>
+    <g
+       transform="translate(29.648,158.018)"
+       font-size="24px"
+       fill="#FF0000"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185406px;"
+       id="g4349">
+      <text
+         x="0px"
+         y="24px"
+         font-style="oblique"
+         style="border: 0px solid #000000; line-height: 30px;"
+         id="text4351">
+            E<tspan
+   baseline-shift="sub"
+   style="border: -1073766128px solid #A51248; line-height: 2147435070px;"
+   id="tspan4353">z</tspan>
+</text>
+    </g>
+    <g
+       transform="translate(133.148,273.017)"
+       font-size="24px"
+       fill="#FF0000"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185422px;"
+       id="g4355">
+      <text
+         x="0px"
+         y="24px"
+         font-style="oblique"
+         style="border: 0px solid #000000; line-height: 30px;"
+         id="text4357">
+            E<tspan
+   baseline-shift="sub"
+   style="border: -1073766128px solid #A51248; line-height: 2147435070px;"
+   id="tspan4359">x</tspan>
+</text>
+    </g>
+    <g
+       transform="translate(299.648,221.518)"
+       font-size="24px"
+       fill="#FF0000"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185422px;"
+       id="g4361">
+      <text
+         x="0px"
+         y="24px"
+         font-style="oblique"
+         style="border: 0px solid #000000; line-height: 30px;"
+         id="text4363">
+            E<tspan
+   baseline-shift="sub"
+   style="border: -1073766128px solid #A51248; line-height: 2147435070px;"
+   id="tspan4365">y</tspan>
+</text>
+    </g>
+    <g
+       transform="translate(129.148,166.518)"
+       font-size="24px"
+       fill="#1F00FF"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185422px;"
+       id="g4367">
+      <text
+         x="0px"
+         y="24px"
+         font-style="oblique"
+         style="border: 0px solid #000000; line-height: 30px;"
+         id="text4369">
+            H<tspan
+   baseline-shift="sub"
+   style="border: -1073766128px solid #A51248; line-height: 2147435070px;"
+   id="tspan4371">y</tspan>
+</text>
+    </g>
+    <g
+       transform="translate(293.148,144.518)"
+       font-size="24px"
+       fill="#1F00FF"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185422px;"
+       id="g4373">
+      <text
+         x="0px"
+         y="24px"
+         font-style="oblique"
+         style="border: 0px solid #000000; line-height: 30px;"
+         id="text4375">
+            H<tspan
+   baseline-shift="sub"
+   style="border: -1073766128px solid #A51248; line-height: 2147435070px;"
+   id="tspan4377">x</tspan>
+</text>
+    </g>
+    <g
+       transform="translate(208.648,40.517)"
+       font-size="24px"
+       fill="#1F00FF"
+       font-family="Times, serif"
+       style="border: 71592696px solid #000000; line-height: 143185422px;"
+       id="g4379">
+      <text
+         x="0px"
+         y="24px"
+         font-style="oblique"
+         style="border: 0px solid #000000; line-height: 30px;"
+         id="text4381">
+            H<tspan
+   baseline-shift="sub"
+   style="border: -1073766128px solid #A51248; line-height: 2147435070px;"
+   id="tspan4383">z</tspan>
+</text>
+    </g>
+  </g>
+</svg>
