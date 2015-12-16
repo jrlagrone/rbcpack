@@ -4,7 +4,7 @@
 2-D FDTD code with CRBC/DAB Boundary Conditions
 ***********************************************
 
-This tutorial explains the code `yee_TM.c <https://bitbucket.org/jlagrone/yee-crbc-testing/src/default/examples/2d_yee/yee_TM.c?at=default/>`_.
+This tutorial explains the code `yee_TM.c <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/2d_yee/yee_TM.c>`_.
 
 Introduction
 ============
