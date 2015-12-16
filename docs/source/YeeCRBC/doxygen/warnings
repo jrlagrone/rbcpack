@@ -1,0 +1,39 @@
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/crbc_updates.hpp:33: warning: found documented #define but ignoring it because ENABLE_PREPROCESSING is NO.
+
+/home/john/Desktop/repos/rbcpack/YeeCRBC/examples/wave_cxx/wave_eq.cpp:21: warning: found documented #define but ignoring it because ENABLE_PREPROCESSING is NO.
+
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/crbc_updates.hpp:86: warning: included file wave_eq.cpp is not found. Check your EXAMPLE_PATH
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_crbc_api.h:26: warning: included file yee.c is not found. Check your EXAMPLE_PATH
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/2d_crbc_api.h:26: warning: included file yee_TM.c is not found. Check your EXAMPLE_PATH
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/2d_crbc_api.cpp:331: warning: expected whitespace after [ command
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/2d_crbc_api.cpp:331: warning: argument 'inout' of command @param is not found in the argument list of CRBC2d_restart(CrbcUpdater2d **U, const char *fname)
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/2d_crbc_api.cpp:331: warning: The following parameters of CRBC2d_restart(CrbcUpdater2d **U, const char *fname) are not documented:
+  parameter 'U'
+  parameter 'fname'
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/2d_crbc_api.cpp:331: warning: expected whitespace after [ command
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/2d_crbc_api.cpp:331: warning: argument 'inout' of command @param is not found in the argument list of CRBC2d_restart(CrbcUpdater2d **U, const char *fname)
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/2d_crbc_api.cpp:331: warning: The following parameters of CRBC2d_restart(CrbcUpdater2d **U, const char *fname) are not documented:
+  parameter 'U'
+  parameter 'fname'
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api.cpp:330: warning: expected whitespace after [ command
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api.cpp:330: warning: argument 'inout' of command @param is not found in the argument list of CRBC_restart(YeeCrbcUpdater **U, const char *fname)
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api.cpp:330: warning: The following parameters of CRBC_restart(YeeCrbcUpdater **U, const char *fname) are not documented:
+  parameter 'U'
+  parameter 'fname'
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api.cpp:330: warning: expected whitespace after [ command
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api.cpp:330: warning: argument 'inout' of command @param is not found in the argument list of CRBC_restart(YeeCrbcUpdater **U, const char *fname)
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api.cpp:330: warning: The following parameters of CRBC_restart(YeeCrbcUpdater **U, const char *fname) are not documented:
+  parameter 'U'
+  parameter 'fname'
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/crbc_updates.hpp:138: warning: Found unknown command `\TODO'
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/crbc_updates.hpp:225: warning: argument 'file' of command @param is not found in the argument list of crbc::CrbcUpdates< DIM, DataType, IndexType, CoefType >::save_state(const std::string &fname) const
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/crbc_updates.hpp:225: warning: The following parameters of crbc::CrbcUpdates::save_state(const std::string &fname) const are not documented:
+  parameter 'fname'
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:455: warning: Unsupported xml/html tag <fname> found
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:458: warning: Unsupported xml/html tag <fname> found
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:459: warning: Unsupported xml/html tag <fname> found
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:459: warning: Unsupported xml/html tag <fname> found
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:517: warning: Unsupported xml/html tag <fname> found
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:520: warning: Unsupported xml/html tag <fname> found
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:520: warning: Unsupported xml/html tag <fname> found
+/home/john/Desktop/repos/rbcpack/YeeCRBC/src/3d_yee_api_cxx.cpp:520: warning: Unsupported xml/html tag <fname> found
