@@ -72,6 +72,7 @@ Theory, Results, and Publications
    :maxdepth: 2
 
    theory_overview
+   matlab_examples
    results
    pubs
 
