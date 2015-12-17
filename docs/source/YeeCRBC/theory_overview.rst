@@ -5,7 +5,7 @@ A Brief Overview of Theory
 Overview of Complete Radiation Boundary Conditions
 ==================================================
 
-Following from :cite:`CRBC`, the goal is first write down a complete
+The goal is first write down a complete
 representation of the solution away from the interior of our computational
 domain.
 To this end, suppose that  :math:`u(x,y,t)` satisfies 
@@ -180,7 +180,7 @@ other boundary conditions
 Overview of the Double Absorbing Boundary
 =========================================
 
-Following from :cite:`DAB`, we illustrate the double absorbing boundary layer (DAB)
+We illustrate the double absorbing boundary layer (DAB)
 using the Klein-Gordon equation in the semi-infinite wave guide:
 
 .. math::
@@ -193,7 +193,7 @@ using the Klein-Gordon equation in the semi-infinite wave guide:
      \frac{\partial u}{\partial t} (x,y,0) = \dot{g}(x,y). 
   \end{align} 
 
-We further suppose that if :math:` x > x_I > x_L`, the medium is homogeneous and free of sources, that is,
+We further suppose that if :math:`x > x_I > x_L`, the medium is homogeneous and free of sources, that is,
 `c` and :math:`s` are constants and :math:`f = 0`; therefore, :math:`Wu = 0`. 
 Additionally, we require that the initial conditions vanish so :math:`g = \dot{g} = 0`
 for :math:`x > x_I`. 

@@ -5,7 +5,7 @@ The purpose of this library is to provide accurate and efficient radiation and
 absorbing boundary conditions to truncate the computational domain for the
 simulation of a variety of wave propagation problems in the time domain. 
 The plan is for RBCPack to contain stand-alone components that implement complete
-radition boundary conditions and/or double absorbing boundary layers for a variety
+radiation boundary conditions and/or double absorbing boundary layers for a variety
 of popular time-domain wave propagation solvers.
 
 
@@ -59,7 +59,6 @@ respective pages.
 
 The code is released under the LGPL v3. See http://www.gnu.org/licenses/lgpl-3.0.en.html.
 If a different license is required, please contact us.
-
 
 
 Acknowledgments
