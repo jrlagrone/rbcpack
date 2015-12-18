@@ -286,6 +286,8 @@ The following are some advantages the double absorbing boundary layer constructi
 
 * The interior of the DAB layer can be approximated using a different scheme than what is used on the domain :math:`\varOmega_I`, which allows us, for instance, to return data at whatever ghost nodes the scheme in :math:`\varOmega_I` may need.
 
+.. _dab_discretization:
+
 Discretization of the DAB
 =========================
 
@@ -322,7 +324,7 @@ This yields the following discretization:
 
 .. math::
 
-  u_{0}^{n_x-1,j,k,n} = E_{y}^{n_x-1,j,k,n}.
+  u_{0}^{n_x-1,j,k,n} = u^{n_x-1,j,k,n}.
 
 The discretization of the wave equation is
 
@@ -380,4 +382,6 @@ Corners are handled similarly with a triply indexed set of auxiliary variables.
 .. rubric:: References
 
 .. bibliography:: zcite.bib
+   :encoding: UTF8
    :list: enumerated
+   :filter: author % "Hagstrom"

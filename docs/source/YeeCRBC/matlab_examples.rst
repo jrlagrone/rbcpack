@@ -1,6 +1,9 @@
 Implementation Examples in Matlab 
 =================================
 
+The following examples are meant to better illustrate the information given in
+the :doc:`theory overview <theory_overview>`.
+
 1D Klein-Gordon
 ---------------
 

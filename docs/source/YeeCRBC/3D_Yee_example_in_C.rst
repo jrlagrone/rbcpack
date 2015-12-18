@@ -4,7 +4,7 @@
 3-D FDTD code with CRBC/DAB Boundary Conditions
 ***********************************************
 
-This tutorial explains the code `yee.c <https://bitbucket.org/rbcpack/rbcpack/src/default/examples/3d_yee/yee.c?at=default/>`_.
+This tutorial explains the code `yee.c <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/3d_yee/yee.c>`_.
 
 Introduction
 ============

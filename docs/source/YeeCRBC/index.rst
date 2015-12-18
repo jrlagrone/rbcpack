@@ -33,7 +33,7 @@ clear notion of convergence and it is possible to choose optimal parameters `a p
 Downloads and Respository
 -------------------------
 
-The initial release download at `yee_crbc_lib_1.0.0.tar.gz <yee_crbc_lib_1.0.0.tar.gz>`_
+The initial release download at :download:`yee_crbc_lib_1.0.0.tar.gz <yee_crbc_lib_1.0.0.tar.gz>`.
 
 The code is also hosted in a read only repository that may contain bug fixes and
 improvements between releases. `RBCPack Bitbucket Reposistory <https://bitbucket.org/rbcpack/rbcpack>`_

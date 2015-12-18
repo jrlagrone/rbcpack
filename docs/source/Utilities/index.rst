@@ -28,5 +28,5 @@ wave equation. It is appropriate to use these values for most homogeneous proble
 such as Maxwell's equations or accoustics.
 
 These routines are available in the `RBCPack Bitbucket Reposistory <https://bitbucket.org/rbcpack/rbcpack>`_
-or can be downloaded directly `optimal_cosines.tar.gz <optimal_cosines.tar.gz>`_
+or can be downloaded directly :download:`optimal_cosines.tar.gz <optimal_cosines.tar.gz>`.
 
