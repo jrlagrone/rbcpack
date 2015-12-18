@@ -13,7 +13,7 @@ m = 600;           % number of grid points to extent the domain by for a referen
 s = 25;            % dispersion parameter
 c = 1;             % wave speed
 nsteps = 1500;     % number of time steps
-cfl = 0.99; % cfl ratio (1 is exact dispersion relation, but num. unstable)
+cfl = 0.99;        % cfl ratio 
 
 % compute grid spacing / time step
 dx = 1.0 / (n - 1);

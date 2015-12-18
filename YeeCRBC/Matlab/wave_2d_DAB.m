@@ -4,10 +4,10 @@
 
 % domain parameters
 n = 300;           % number of grid points in domain [0,0.1]
-m = 150;           % number of grid points to extent the domain by for a reference 
+m = 300;           % number of grid points to extent the domain by for a reference 
                    % solution using a larger simulation
 c = 1;             % wave speed
-nsteps = 1500;     % number of time steps
+nsteps = 700;     % number of time steps
 cfl = 0.99; % cfl ratio (1 is exact dispersion relation, but num. unstable)
 
 % compute grid spacing / time step
@@ -120,13 +120,13 @@ for t=1:nsteps
     % field and comparison to larger simulation
     figure(1)
     subplot(1,2,1)
-    surf(unew);
+    surf(unew');
     view(2)
     shading interp
     colorbar;
     title('field values')
     subplot(1,2,2)
-    surf(unew - runew(1:n,1:n))
+    surf(unew' - runew(1:n,1:n)')
     colorbar;
     view(2)
     shading interp
