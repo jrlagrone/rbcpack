@@ -28,7 +28,7 @@ For this example, we consider the 2D Klein-Gordon equation,
   :nowrap:
 
   \begin{align}
-    \frac{d^2 u}{d t^2} &= c^2 \left(\frac{d^2 u}{d x^2} + \frac{d^2 u}{d x^y} \right) - su,
+    \frac{d^2 u}{d t^2} &= c^2 \left(\frac{d^2 u}{d x^2} + \frac{d^2 u}{d y^2} \right) - su,
   \end{align}
 
 where :math:`c>0`.
@@ -86,7 +86,7 @@ Letting
   \begin{align}
     \frac{u(x_i,y_j,t_{n-1}) - 2u(x_i,y_j,t_{n}) + u(x_i,y_j,t_{n+1})}{\Delta t} 
     = c\left( \frac{u(x_{i-1},y_j,t_{n}) - 2u(x_i,y_j,t_{n}) + u(x_{i+1},y_j,t_{n})}{\Delta x} 
-      + \frac{u(x_{i},y_{j-1},t_{n}) - 2u(x_i,y_j,t_{n}) + u(x_{i},y_{j+1},t_{n})}{\Delta x}\right)
+      + \frac{u(x_{i},y_{j-1},t_{n}) - 2u(x_i,y_j,t_{n}) + u(x_{i},y_{j+1},t_{n})}{\Delta y}\right)
       - s u(x_i,y_j,t_{n}).
   \end{align}
 

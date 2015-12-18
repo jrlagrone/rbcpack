@@ -5,7 +5,7 @@ Supported Problems
 Materials
 =========
 
-The library currently requires that materials be homogeneous at and beyond the
+The library currently requires that materials be isotropic at and beyond the
 location of the boundary. It is fine to have arbitrary media in the interior of
 the simulation, but any such material should be seperated from the boundary by a 
 distance of at least :math:`\delta`.
