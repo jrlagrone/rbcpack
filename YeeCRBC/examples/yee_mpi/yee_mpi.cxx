@@ -526,8 +526,8 @@ void yee_updater::calc_params()
     // grid overlaps by h so processes share 2 grid points with their neighbors.
     //
     // So we want the domain to look something like
-    // ......     .........     .........     ......
-    //     .........     .........     .........
+    // ......       ...........       ...........       ......
+    //     ...........       ...........       ...........
     //
     // So if we had a single process we would have 
     //   (domain_width/h + 1) points
@@ -634,4 +634,99 @@ void yee_updater::calc_params()
   // update timer
   t2 = MPI_Wtime();
   calc_params_t += t2-t1;
+}
+
+
+/*******************************************************************************
+               function to create MPI communicator
+*******************************************************************************/
+void yee_updater::create_mpi_comm(MPI_Comm comm) {
+  int periods[3];
+  periods[0] = 0; // not periodic
+  periods[1] = 0;
+  periods[2] = 0;
+  int reorder = 1;
+  double t1, t2;
+
+  t1 = MPI_Wtime(); // start timer
+
+  int dims[3];
+  dims[0] = nprocs;
+  dims[1] = nprocs;
+  dims[2] = nprocs;
+
+  nprocs_cubed = nprocs*nprocs*nprocs;
+  
+  // create a cartesian communicator with nprocs in each direction
+  if (MPI_Cart_create(comm, 3, dims, periods, reorder, &grid_comm) != MPI_SUCCESS) {
+    std::cerr << "MPI_Cart_create failed" << std::endl;
+  }
+
+  // figure out neighboring processes
+  NORTH = MPI_PROC_NULL;
+  EAST = MPI_PROC_NULL;
+  SOUTH = MPI_PROC_NULL;
+  WEST = MPI_PROC_NULL;
+  UP = MPI_PROC_NULL;
+  DOWN = MPI_PROC_NULL;
+
+  cart_rank[0] = -1;
+  cart_rank[1] = -1;
+  cart_rank[2] = -1;
+
+  if (grid_comm != MPI_COMM_NULL) {
+    if (MPI_Comm_rank(grid_comm, &my_id) != MPI_SUCCESS)
+      std::cerr << "MPI_Comm_rank failed" << std::endl;
+    if (MPI_Cart_coords(grid_comm, my_id, 3, cart_rank) != MPI_SUCCESS)
+      std::cerr << "MPI_Cart_coords failed" << std::endl;
+
+    // figure the ids of the processes we might need to send data to
+    if (MPI_Cart_shift(grid_comm, 2, -1, &UP, &DOWN) != MPI_SUCCESS)
+      std::cerr << "MPI_Cart_shift failed" << std::endl;
+
+    if (MPI_Cart_shift(grid_comm, 1, -1, &NORTH, &SOUTH) != MPI_SUCCESS)
+      std::cerr << "MPI_Cart_shift failed" << std::endl;
+
+    if (MPI_Cart_shift(grid_comm, 0, -1, &EAST, &WEST) != MPI_SUCCESS)
+      std::cerr << "MPI_Cart_shift failed" << std::endl;
+
+  }
+
+  // figure out which processes are on the boundary
+  isBoundaryProc = false;
+
+  // if a process doesn't have a neighbor on at least 1 side, its on the boundary
+  if ((grid_comm != MPI_COMM_NULL) && ((NORTH == MPI_PROC_NULL) || 
+       (EAST == MPI_PROC_NULL) || (SOUTH == MPI_PROC_NULL) || 
+       (WEST == MPI_PROC_NULL) || (UP == MPI_PROC_NULL) || 
+       (DOWN == MPI_PROC_NULL)))
+    isBoundaryProc = true;
+
+  // label the boundaries. Use type NONE for interior sides and CRBC for the
+  // exterior boundaries. To do a wave guide, e.g., one might change the type
+  // to PEC on the appropriate sides
+  for (int i=0; i<6; ++i)
+    procBounds[i] = crbc::BoundaryProperties::NONE;
+
+  if ((grid_comm != MPI_COMM_NULL) && (UP == MPI_PROC_NULL))
+    procBounds[5] = crbc::BoundaryProperties::CRBC;
+   
+  if ((grid_comm != MPI_COMM_NULL) && (DOWN == MPI_PROC_NULL))
+    procBounds[4] = crbc::BoundaryProperties::CRBC;
+
+  if ((grid_comm != MPI_COMM_NULL) && (NORTH == MPI_PROC_NULL))
+    procBounds[3] = crbc::BoundaryProperties::CRBC;
+
+  if ((grid_comm != MPI_COMM_NULL) && (SOUTH == MPI_PROC_NULL))
+    procBounds[2] = crbc::BoundaryProperties::CRBC;
+
+  if ((grid_comm != MPI_COMM_NULL) && (EAST == MPI_PROC_NULL))
+    procBounds[1] = crbc::BoundaryProperties::CRBC;
+
+  if ((grid_comm != MPI_COMM_NULL) && (WEST == MPI_PROC_NULL))
+    procBounds[0] = crbc::BoundaryProperties::CRBC;
+
+  // stop timer
+  t2 = MPI_Wtime();
+  create_comm_t += t2-t1;
 }
