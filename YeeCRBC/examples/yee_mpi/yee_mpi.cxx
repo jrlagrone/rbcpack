@@ -37,6 +37,9 @@
 // This has the declarations of the 'sqrt' and 'fabs' functions
 #include <cmath>
 
+// We use this for std::accumulate
+#include <numeric>
+
 /*******************************************************************************
                             constructor
 *******************************************************************************/
@@ -70,7 +73,9 @@ yee_updater::yee_updater(MPI_Comm comm,
   this->gamma = gamma;
   this->tau = tau;
   this->dab_wt = dab_wt;
-  
+
+  // compute the wave speed;
+  c = 1.0 / std::sqrt(eps*mu); 
 
   // make a copy of the communicator
   MPI_Comm_dup(comm, &glob_comm);
@@ -89,7 +94,7 @@ yee_updater::yee_updater(MPI_Comm comm,
     try {
       calc_params();
     } catch (const std::exception& e) {
-      std::cout << "id = " << my_id 
+      std::cerr << "id = " << my_id 
         << " failed in calc_params() --- a standard exception was caught, with message '"
         << e.what() << "'" << std::endl;
       MPI_Abort(glob_comm, -2);
@@ -104,7 +109,7 @@ yee_updater::yee_updater(MPI_Comm comm,
     try {
       allocate_memory();
     } catch (const std::exception& e) {
-      std::cout << "id = " << my_id 
+      std::cerr << "id = " << my_id 
         << " failed in allocate_memory() --- a standard exception was caught, with message '"
         << e.what() << "'" << std::endl;
       MPI_Abort(glob_comm, -2);
@@ -119,7 +124,7 @@ yee_updater::yee_updater(MPI_Comm comm,
     try {
       init_DAB();
     } catch (const std::exception& e) {
-      std::cout << "id = " << my_id 
+      std::cerr << "id = " << my_id 
         << " failed in init_DAB() --- a standard exception was caught, with message '"
         << e.what() << "'" << std::endl;
       MPI_Abort(glob_comm, -2);
@@ -134,7 +139,7 @@ yee_updater::yee_updater(MPI_Comm comm,
     try {
       init_solutions();
     } catch (const std::exception& e) {
-      std::cout << "id = " << my_id 
+      std::cerr << "id = " << my_id 
         << " failed in init_solutions() --- a standard exception was caught, with message '"
         << e.what() << "'" << std::endl;
       MPI_Abort(glob_comm, -2);
@@ -173,7 +178,7 @@ void yee_updater::run()
     try {
       load_initial_conds();
     } catch (const std::exception& e) {
-      std::cout << "id = " 
+      std::cerr << "id = " 
         << my_id << " failed in load_initial_conds() --- a standard exception was caught, with message '"
         << e.what() << "'" << std::endl;
       MPI_Abort(glob_comm, -2);
@@ -186,7 +191,7 @@ void yee_updater::run()
     try {
       loc_norm = calc_norm();
     } catch (const std::exception& e) {
-      std::cout << "id = " << my_id 
+      std::cerr << "id = " << my_id 
         << " failed in calc_norm() --- a standard exception was caught, with message '"
         << e.what() << "'" << std::endl;
         MPI_Abort(glob_comm, -2);
@@ -370,3 +375,263 @@ void yee_updater::print_mem_use() const
     } // end my_id == 0
   } // end if grid_comm != MPI_COMM_NULL
 } // end print_mem_use()
+
+/*******************************************************************************
+               function to print timing data
+*******************************************************************************/
+void yee_updater::print_timing_data() const 
+{
+
+  if (grid_comm != MPI_COMM_NULL) {
+
+    std::vector<double> timers_send, timers_recv;
+
+    timers_send.reserve(15);
+    timers_recv.assign(15*nprocs_cubed, 0.0);
+
+    // save all the local timers to a vector
+    timers_send.push_back(calc_params_t);
+    timers_send.push_back(create_comm_t);
+    timers_send.push_back(alloc_mem_t);
+    timers_send.push_back(init_dab_t);
+    timers_send.push_back(step_E_t);
+    timers_send.push_back(step_inner_H_t);
+    timers_send.push_back(step_outer_H_t);
+    timers_send.push_back(step_DAB_t);
+    timers_send.push_back(send_DAB_t);
+    timers_send.push_back(recv_DAB_t);
+    timers_send.push_back(send_E_t);
+    timers_send.push_back(recv_E_t);
+    timers_send.push_back(load_init_conds_t);
+    timers_send.push_back(calc_norm_t);
+    timers_send.push_back(calc_err_t);
+
+    // gather all timer data
+    MPI_Gather(timers_send.data(), timers_send.size(), MPI_DOUBLE, timers_recv.data(), timers_send.size(), MPI_DOUBLE, 0, grid_comm);
+
+    // print out timer data
+    if (my_id == 0) {
+      std::cout << std::endl << std::endl;
+      std::cout << " ,"
+		<< " Calculating Parameters,"
+		<< " Creating Communicators,"
+		<< " Allocating Memory,"
+		<< " Initializing DABs,"
+		<< " Stepping E,"
+		<< " Stepping Inner H,"
+		<< " Stepping Outer H,"
+		<< " Stepping DAB,"
+		<< " Sending DAB,"
+		<< " Receiving DAB,"
+		<< " Sending E,"
+		<< " Receiving E,"
+		<< " Loading Initial Condition,"
+		<< " Calculating Norm,"
+		<< " Calculating Error,"
+		<< " Total "
+		<< std::endl;
+
+      timers_send.assign(16, 0.0);
+      for (int i = 0; i<nprocs_cubed; ++i) {
+	double sum = std::accumulate(timers_recv.begin() + 15*i, timers_recv.begin() + 15*(i+1), 0.0);
+
+        // print timer data for each process
+	std::cout << " process " << i << ",";
+        for (int j=0; j<15; ++j)
+          std::cout << timers_recv[15*i+j] << ",";
+        std::cout << sum << std::endl;
+
+        // update total times
+        for (int j=0; j<15; ++j)
+	  timers_send[j] += timers_recv[15*i + j];
+	timers_send[15] += sum;
+      }
+
+      std::cout << " Total " << ",";
+      for (int j=0; j<15; ++j)
+	std::cout << timers_send[j] << ",";
+      std::cout << timers_send[15] << std::endl << std::endl;
+
+      // compute percentages 
+      timers_send.assign(16, 0.0);
+      for (int i = 0; i<nprocs_cubed; ++i) {
+	std::cout << " process " << i << ",";
+        for (int j=0; j<15; ++j)
+          std::cout << 100*timers_recv[15*i + j] / std::accumulate(timers_recv.begin() + 15*i, timers_recv.begin() + 15*i + 15, 0.0) << ",";
+        std::cout << "100" << std::endl;
+
+        // total percentages
+        for (int j=0; j<15; ++j)
+	  timers_send[j] += timers_recv[15*i+j] / std::accumulate(timers_recv.begin() + 15*i, timers_recv.begin() + 15*i + 15, 0.0);
+	timers_send[15] += 1;
+      }
+
+      std::cout << " Average " << ",";
+      for (int j=0; j<15; ++j)
+        std::cout << 100*timers_send[j]/nprocs_cubed << ",";
+      std::cout << std::endl << std::endl;
+    } // end if id == 0
+  } // end comm check
+} // end print_timing_data
+
+
+/*******************************************************************************
+               function to calculate parameters
+*******************************************************************************/
+void yee_updater::calc_params() 
+{
+
+  double eta, emax, cosines[40];
+  int x, i, j, k, rem, n[3], P;
+  double t1, t2;
+
+  t1 = MPI_Wtime();  // start timer
+
+  // \delta/(cT) where delta is the seperation of the boundary from the source
+  // we assume the source is centered in the domain
+  eta = (domain_width / 2.0 ) / (c*CRBC_T);
+
+  // figure out the expected number of recursoins
+  optimal_cosines(eta, 20, tol, cosines, &P, &emax);
+
+  // compute the left-most point in each coordinate direction
+  coord[0] = -domain_width/2.0;
+  coord[1] = -domain_width/2.0;
+  coord[2] = -domain_width/2.0;
+
+  // Do some basic load balancing. The idea that using P auxilliary variables
+  // is roughly equal (in terms of FLOPS) to doing ~3*P Yee cell updates, so
+  // we will make the processes with DAB layers have fewer Yee updates to
+  // compute but otherwise distribute the points as evenly as possible.
+  // Note that the difference between the DAB and Yee memory access patterns
+  // probably plays a role here, but we're ignoring it.
+  //
+  // Also note that we are overlaping the processor domains by a factor of h.
+  // This is certainly less memory efficient, but it makes the message 
+  // passing and updates a bit more straightforward
+  if (nprocs == 1) {
+    
+    // if there's only 1 MPI process, we just compute the number of grid points
+    // like normal
+    x = domain_width/h + 1;
+    for (i=0; i<3; ++i)
+      n[i] = x;
+
+  } else {
+
+    // we start by calculating the total number of "grid points" assuming that 
+    // each additional auxilliary variable in the DAB counts for dab_wt grid 
+    // points. We additionally assume that each of the boundaries is in fact
+    // a DAB, that is we assume the free space problem. We also assume the 
+    // grid overlaps by h so processes share 2 grid points with their neighbors.
+    //
+    // So we want the domain to look something like
+    // ......     .........     .........     ......
+    //     .........     .........     .........
+    //
+    // So if we had a single process we would have 
+    //   (domain_width/h + 1) points
+    // plus there are 2 DABS, which give
+    //   (2*dab_wt*P) points
+    // plus we have the extra points due to overlapping the grid, which gives
+    //   ((nprocs-1)*2) points
+    // putting this all together, we get that we need a total of 
+    //   (domain_width/h + 2*dab_wt*P + 2*nprocs -1)
+    // We try to divide this up evenly and calculate how many points are left
+    //
+    // IMPORTANT:
+    // This can fail by making processes have too few points on the boundary or
+    // or even assigning a negative number of points on the boundary processes.
+    // This isn't really accounted for, but we attempt to abort if we see it ...
+    x = ((int) (domain_width/h + 2*dab_wt*P + 2*(nprocs) - 1)) / nprocs;
+    rem = ((int) (domain_width/h + 2*dab_wt*P + 2*(nprocs) - 1)) % nprocs;
+
+    // Next we allocate points to processes in each direction bases on whether
+    // they are on the boundary or not
+    for (i=0; i<3; ++i) {
+      if ((cart_rank[i] == 0) || (cart_rank[i] == nprocs-1)) {
+
+        // if the process is on the boundary, we subtract of dab_wt*P points
+        // to account for the DAB layer. We additionally calculate the left
+        // most coordinate in this direction. Note that on the left side, we 
+        // have already correctly set this value so we only do it if it is the
+        // right-most process
+	n[i] = x - dab_wt*P;
+	if (cart_rank[i] == nprocs-1) {
+	  coord[i] += (x - dab_wt*P - 2)*h + (cart_rank[i]-1)*(x-2)*h;
+	}
+      } else {
+ 
+        // otherwise, we just assign the number of points as is and calculate
+        // the left-most point of the process in the current direction
+	n[i] = x;
+	coord[i] += (x - dab_wt*P - 2)*h + (cart_rank[i]-1)*(x-2)*h;
+      }
+    }
+
+    // now account for any left over points
+    if (nprocs == 2) {
+      // if there are only 2 processes per direction, just add the extra point(s)
+      // to the left process and shift the right process' coordinates accordingly.
+      for (i=0; i<3; ++i)
+	if (cart_rank[i] == 0) {
+	  n[i] += rem;
+	} else {
+	  coord[i] += rem*h;
+	}
+    } else {
+   
+      // otherwise we only add extra points to the interior processes. We do 
+      // this by looping over the interior processes from left to right and
+      // add one to the current process and the coordinates by h for all of the
+      // processes to the right and repeat until we have no remaining points.
+      int r[3];
+      r[0] = rem;
+      r[1] = rem;
+      r[2] = rem;
+
+      // loop over the number of remaining points just to make sure we iterate
+      // enough times
+      for (k=0; k<rem; ++k) {
+        // loop over the interior processes
+	for (j=1; j<nprocs-1; ++j) {
+          // loop over the directions
+	  for (i=0; i<3; ++i) {
+            // if we have points left add one to the current process and shift
+            // the process the coordinates for the processes to the right
+	    if (r[i] > 0) {
+	      if (cart_rank[i] == j) {
+		n[i]++;
+		r[i]--;
+	      }
+	      if (cart_rank[i] > j)
+		coord[i] += h;
+	    }
+	  }
+	}
+      } // end for k
+    }
+  }
+
+  // do a basic check to make sure that the grid partitioning is somewhat 
+  // reasonable
+  if ((n[0] < 3) || (n[1] < 3) || (n[2] < 3)) {
+    std::cerr << "Grid partitioning failed. Try decreasing h, dab_wt, and/or nprocs" << std::endl;
+      MPI_Abort(glob_comm, -3);
+  }
+
+  // save the number of grid points in each direction
+  nx = n[0];
+  ny = n[1];
+  nz = n[2];
+
+  // calculate the time step size and number of time steps
+  dt = 0.99 / sqrt(3.0/(h*h));
+  ntsteps = T / dt;
+  Etime = 0;
+  Htime = dt/2.0;
+
+  // update timer
+  t2 = MPI_Wtime();
+  calc_params_t += t2-t1;
+}

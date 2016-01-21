@@ -116,7 +116,7 @@ private:
   std::vector<double> DAB_N_sbuf[4], DAB_S_sbuf[4], DAB_E_sbuf[4], DAB_W_sbuf[4], DAB_U_sbuf[4], DAB_D_sbuf[4];
   std::vector<double> DAB_N_rbuf[4], DAB_S_rbuf[4], DAB_E_rbuf[4], DAB_W_rbuf[4], DAB_U_rbuf[4], DAB_D_rbuf[4];
 
-  double eps, mu, gamma, tau, io_t;
+  double eps, mu, gamma, tau, io_t, c;
   double T, dt, h, Etime, Htime;
   double tol, CRBC_T;
   double coord[3], domain_width;
