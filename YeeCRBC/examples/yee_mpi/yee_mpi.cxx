@@ -40,6 +40,11 @@
 // We use this for std::accumulate
 #include <numeric>
 
+// optional OpenMP
+#if USE_OPENMP
+  #include <omp.h>
+#endif
+
 /*******************************************************************************
                             constructor
 *******************************************************************************/
@@ -1137,5 +1142,283 @@ void yee_updater::init_DAB()
   // stop timer
   t2 = MPI_Wtime();
   init_dab_t += t2-t1;
+}
+
+
+/*******************************************************************************
+                routine to update E fields
+*******************************************************************************/
+void yee_updater::step_E()
+{
+  int i,j,k;
+  int nxm, nym, nzm;
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+  
+  #if USE_OPENMP
+  #pragma omp parallel default(shared) private(i,j,k)
+  {
+  #endif
+
+    // compute updates to Ex
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm; ++k) {
+      for (j=1; j < nym; ++j) {
+        for (i=0; i < nxm; ++i) {
+	  Ex[i + (j + k*ny)*nxm] += Ecoef * ((Hz[i + (j + k*nym)*nxm] - Hz[i + (j-1 + k*nym)*nxm]) \
+		- (Hy[i + (j + k*ny)*nxm] - Hy[i + (j + (k-1)*ny)*nxm]));
+        }
+      }
+    }
+
+    // compute updates to Ey
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm; ++k) {
+      for (j=0; j < nym; ++j) {
+        for (i=1; i < nxm; ++i) {
+	  Ey[i + (j + k*nym)*nx] += Ecoef * ((Hx[i + (j + k*nym)*nx] - Hx[i + (j + (k-1)*nym)*nx]) \
+		- (Hz[i + (j + k*nym)*nxm] - Hz[i-1 + (j + k*nym)*nxm]));
+        }
+      }
+    }
+
+    // compute updates to Ez
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k < nzm; ++k) {
+      for (j=1; j < nym; ++j) {
+        for (i=1; i < nxm; ++i) {
+	  Ez[i + (j + k*ny)*nx] += Ecoef * ((Hy[i + (j + k*ny)*nxm] - Hy[i-1 + (j + k*ny)*nxm]) \
+		- (Hx[i + (j + k*nym)*nx] - Hx[i + (j-1 + k*nym)*nx]));
+        }
+      }
+    }
+
+  #if USE_OPENMP
+  } // end parallel region
+  #endif
+
+  // stop timer
+  t2 = MPI_Wtime();
+  step_E_t += t2-t1;
+}
+
+/*******************************************************************************
+                routine to update interior H fields
+*******************************************************************************/
+void yee_updater::step_inner_H()
+{
+  int i,j,k;
+  int nxm, nym, nzm;
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  #if USE_OPENMP
+  #pragma omp parallel default(shared) private(i,j,k)
+  {
+  #endif
+
+    // compute updates to Hx
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm-1; ++k) {
+      for (j=1; j < nym-1; ++j) {
+        for (i=1; i < nxm; ++i) {
+	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
+			- (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+        }
+      }
+    }
+
+    // compute updates to Hy
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm-1; ++k) {
+      for (j=1; j < nym; ++j) {
+        for (i=1; i < nxm-1; ++i) {
+	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
+			- (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+        }
+      }
+    }
+
+    // compute updates to Hz
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm; ++k) {
+      for (j=1; j < nym-1; ++j) {
+        for (i=1; i < nxm-1; ++i) {
+	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
+			 - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+        }
+      }
+    }
+
+  #if USE_OPENMP
+  }
+  #endif
+
+  // stop timer
+  t2 = MPI_Wtime();
+  step_inner_H_t += t2-t1;
+}
+
+/*******************************************************************************
+                routine to update boundary H fields
+*******************************************************************************/
+void yee_updater::step_outer_H()
+{
+  int i,j,k;
+  int nxm, nym, nzm;
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  #if USE_OPENMP
+  #pragma omp parallel default(shared) private(i,j,k)
+  {
+  #endif
+
+    // compute updates to Hx
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k < nzm; ++k) {
+      for (j=0; j < nym; ++j) {
+        for (i=0; i < nx; i+=nxm) {
+	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
+			 - (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+        }
+      }
+    }
+
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k < nzm; ++k) {
+      for (j=0; j < nym; j+=nym-1) {
+        for (i=1; i < nxm; ++i) {
+	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
+			- (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+        }
+      }
+    }
+
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k < nzm; k+=nzm-1) {
+      for (j=1; j < nym-1; ++j) {
+        for (i=1; i < nxm; ++i) {
+	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
+			- (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+        }
+      }
+    }
+
+    // compute updates to Hy
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k < nzm; ++k) {
+      for (j=0; j < ny; j+=nym) {
+        for (i=0; i < nxm; ++i) {
+	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
+			 - (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+        }
+      }
+    }
+ 
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k < nzm; k+=nzm-1) {
+      for (j=1; j < nym; ++j) {
+        for (i=0; i < nxm; ++i) {
+	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
+			- (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+        }
+      }
+    }
+    
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm-1; ++k) {
+      for (j=1; j < nym; ++j) {
+        for (i=0; i < nxm; i+=nxm-1) {
+	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
+			 - (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+        }
+      }
+    }
+
+    // compute updates to Hz
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k < nz; k+=nzm) {
+      for (j=0; j < nym; ++j) {
+        for (i=0; i < nxm; ++i) {
+	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
+			 - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+        }
+      }
+    }
+
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm; ++k) {
+      for (j=0; j < nym; j+=nym-1) {
+        for (i=0; i < nxm; ++i) {
+	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
+			  - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+        }
+      }
+    }
+
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=1; k < nzm; ++k) {
+      for (j=1; j < nym-1; ++j) {
+        for (i=0; i < nxm; i+=nxm-1) {
+	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
+			  - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+        }
+      }
+    }
+  
+  #if USE_OPENMP
+  }
+  #endif
+
+  // stop timer
+  t2 = MPI_Wtime();
+  step_outer_H_t += t2-t1;
+
 }
 
