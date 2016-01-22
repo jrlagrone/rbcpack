@@ -149,7 +149,7 @@ private:
   /// function to calculate parameters and do some basic load balancing
   void calc_params();
 
-  /// function to create the internal mpi comm
+  /// function to create the internal mpi comm. It also labels the boundaries.
   void create_mpi_comm(MPI_Comm comm);
 
   /// function to set up the solution routines

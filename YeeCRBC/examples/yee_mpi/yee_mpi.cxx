@@ -730,3 +730,412 @@ void yee_updater::create_mpi_comm(MPI_Comm comm) {
   t2 = MPI_Wtime();
   create_comm_t += t2-t1;
 }
+
+
+/*******************************************************************************
+               function to initialize solutions
+*******************************************************************************/
+void yee_updater::init_solutions() 
+{
+  
+  double src_loc[3];
+  double hloc[3];
+
+  // place the source at (0,0,0) plus a small perturbation to decrease the 
+  // chances of coinciding with a grid point
+  src_loc[0] = 1.43e-7;
+  src_loc[1] = -5.3423e-7;
+  src_loc[2] = 9.012e-8;
+
+  // set the grid spacing to be the same in all directions
+  hloc[0] = h;
+  hloc[1] = h;
+  hloc[2] = h;
+  
+
+  sol_obj = maxwell_solutions::MW_FreeSpace(gamma, tau, eps, mu, src_loc);
+  sol_obj.set_grid_spacing(hloc);
+
+}
+
+/*******************************************************************************
+               function to allocate memory
+*******************************************************************************/
+void yee_updater::allocate_memory()
+{
+
+  int m;
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  // figure out the largest number number of grid points possible
+  m = (nx > ny) ? nx : ny;
+  m = (m > nz) ? m : nz;
+  if (MPI_Allreduce(&m, &maxn, 1, MPI_INT, MPI_MAX, grid_comm) != MPI_SUCCESS)
+    std::cerr << "MPI_Allreduce failed";
+
+  // allocate Fields and initialize to 0
+  Ex.assign((nx-1)*ny*nz, 0.0);
+  Ey.assign(nx*(ny-1)*nz, 0.0);
+  Ez.assign(nx*ny*(nz-1), 0.0);
+  Hx.assign(nx*(ny-1)*(nz-1), 0.0);
+  Hy.assign((nx-1)*ny*(nz-1), 0.0);
+  Hz.assign((nx-1)*(ny-1)*nz, 0.0);
+
+  // compute update coefficients
+  Hcoef = (dt/mu)/h;
+  Ecoef = (dt/eps)/h;
+
+  // allocate buffer space for the worst possible case. We could use slightly
+  // less memory here by figuring out the exact sizes we need.
+  if (procBounds[0] == crbc::BoundaryProperties::NONE) {
+    W_sbuf.assign(2*maxn*maxn, 0.0);
+    W_rbuf.assign(2*maxn*maxn, 0.0);
+  }
+  if (procBounds[1] == crbc::BoundaryProperties::NONE) {
+    E_sbuf.assign(2*maxn*maxn, 0.0);
+    E_rbuf.assign(2*maxn*maxn, 0.0);
+  }
+  if (procBounds[2] == crbc::BoundaryProperties::NONE) {
+    S_sbuf.assign(2*maxn*maxn, 0.0);
+    S_rbuf.assign(2*maxn*maxn, 0.0);
+  }
+  if (procBounds[3] == crbc::BoundaryProperties::NONE) {
+    N_sbuf.assign(2*maxn*maxn, 0.0);
+    N_rbuf.assign(2*maxn*maxn, 0.0);
+  }
+  if (procBounds[4] == crbc::BoundaryProperties::NONE) {
+    D_sbuf.assign(2*maxn*maxn, 0.0);
+    D_rbuf.assign(2*maxn*maxn, 0.0);
+  }
+  if (procBounds[5] == crbc::BoundaryProperties::NONE) {
+    U_sbuf.assign(2*maxn*maxn, 0.0);
+    U_rbuf.assign(2*maxn*maxn, 0.0);
+  }   
+
+  // stop timer
+  t2 = MPI_Wtime();
+  alloc_mem_t += t2-t1;
+}
+
+/*******************************************************************************
+                Initialize the DAB updaters
+*******************************************************************************/
+void yee_updater::init_DAB()
+{
+
+  double delta;
+  int l,m;
+  int low[3], high[3];
+  double htmp[3];
+  htmp[0] = htmp[1] = htmp[2] = h;
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  // storage for DAB boundary properties that we might want to print out or need
+  // to use elsewhere
+  if (my_id == 0) {
+    rDAB_props.assign(15*nprocs_cubed, 0.0);
+    rDAB_refl.assign(10*nprocs_cubed, 0.0);
+  }
+  DAB_props.assign(15, 0);
+  DAB_refl.assign(10, 0.0);
+  DAB_refl[6] = coord[0];
+  DAB_refl[7] = coord[1];
+  DAB_refl[8] = coord[2];
+
+
+  if (isBoundaryProc) {
+
+    // we're assuming this is a free space problem, so we initialize DAB updaters
+    // for all 3 E components. In a wave guide, e.g., where there are no DAB
+    // edges or corners, we only need updaters for the tangential components.
+    // There's no harm in having an updater for the normal components when it's
+    // not needed, but it represents unnecessary work
+    //
+    // We initialize the updaters in 3D with double field values and ints for 
+    // indexing (and by default doubles for coeficients) and provide the run
+    // time, grid spacing, time step size, wave speed, and boundary configuration
+    // on each boundary process
+    bound_upd_Ex = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
+    bound_upd_Ey = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
+    bound_upd_Ez = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
+
+    // loop over and set up each of the possible boundary sides
+    //
+    // We are dealing with the MPI by overlapping the DAB layer for tangential
+    // components, the grids are overlapped by a factor of h so neighboring
+    // processes share 2 physical points. The same thing is done for the normal
+    // component, but it looks slightly different because of the staggered grid.
+    // While they both overlap by a factor of h to share 2 grid points, in the 
+    // Yee scheme it is 1 cell for tangential components and 2 cells for normal
+    // components.
+    //
+    // Tangential components            Normal Components
+    //   ---------                      ---x-----x-----x--- 
+    //   x   x   x                      |     |     |     |
+    //   ---------                      ---x-----x-----x---
+    //       ---------                        ---x-----x-----x---
+    //       x   x   x                        |     |     |     |
+    //       ---------                        ---x-----x-----x---
+    //
+    // Note that the use of normal and tangential components here is somewhat
+    // confusing because it is in reference to the boundaries with neighboring
+    // processes, NOT the phyiscal boundary. We consider the direction in which
+    // the message passing needs to take place as the normal direction. This 
+    // results in the following, e.g.
+    //
+    // With our implementation, each process has components with the following 
+    // indexing bounds:
+    // Ex(0:nx-2, 0:ny-1, 0:nz-1) located at ((i+1/2)*h, j*h, k*h)
+    // Ey(0:nx-1, 0:ny-2, 0:nz-1) located at (i*h, (j+1/2)*h, k*h)
+    // Ez(0:nx-1, 0:ny-1, 0:nz-2) located at (i*h, j*h, (k+1/2)*h)
+    //
+    // So, for example, we'll consider the right boundary face in the x
+    // direction. Then, we potentially need to pass information North/South 
+    // (in the y-direction) or Up/Down (in the z-direction). For the case of 
+    // needed to pass information in the North/South direction, the Ey 
+    // component is normal to the interface between the two processes and Ex and
+    // Ez are tangential. The tangential components are already overlap the way
+    // we want because we overlapped the grids for the Yee scheme, therefore, we
+    // tell the DAB updater the actual data extents for the points:
+    //
+    // For Ex the proper extents are [nx-3, nx-2] x [0, ny-1] x [0, nz-1]
+    // because we include all the points in the y and z directions and the point
+    // in x on the physical boundary and it's neighbor to the left.
+    //
+    // Similary, for Ez the extents are [nx-2, nx-1] x [0, ny-1] x [0, nz-2]
+    //
+    // For Ey, if we do the same thing, we would get the extents
+    // [nx-2, nx-1] x [0, ny-2] x [0, nz-1], but this does not overlap the grids
+    // by 2 points. To correct this, we tell the DAB layer that the extents are
+    // greater than the actual data range by subtracting 1 from the lower y
+    // extent if their is a neighboring process in the DOWN direction to get
+    // [nx-2, nx-1] x [-1, ny-2] x [0, nz-1]
+    // 
+    // NOTE: the DAB updater considers the extents to be inclusive
+    for (l=0; l<6; ++l) {
+
+      if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
+        
+	// figure out seperation from source
+	delta = domain_width / 2.0;
+
+	// loop over field components
+	for (m=0; m<3; ++m) {
+
+          // generic extents that are close to correct (some of the indices are
+          // off by a factor of 1, which depends on the component)
+	  low[0] = 0;
+	  low[1] = 0;
+	  low[2] = 0;
+	  high[0] = nx - 1;
+	  high[1] = ny - 1;
+	  high[2] = nz - 1; 
+
+	  if (l == 0) { 
+	    // left boundary in x, need [0,1] in x, all in y, z
+	    high[0] = 1;
+
+	    // adjust based on field component
+	    if (m == 1) { // Ey
+	      high[1]--;
+	      if (SOUTH != MPI_PROC_NULL)
+		low[1]--;
+	    } else if (m == 2) { // Ez
+              high[2]--;
+	      if (DOWN != MPI_PROC_NULL)
+		low[2]--;
+	    }
+              
+	  } else if (l == 1) { 
+	    // right boundary in x, need [nx-2, nx-1] in x, all y, z for 
+            // tangential and [nx-3, nx-2] in x, all y, z for normal
+	    low[0] = nx-2;
+    
+	    // adjust based on field component
+	    if (m == 0) {
+	      high[0]--;
+	      low[0]--;
+	    } else if (m == 1) { // Ey
+	      high[1]--;
+	      if (SOUTH != MPI_PROC_NULL)
+		low[1]--;
+	    } else if (m == 2) { // Ez
+	      high[2]--;
+	      if (DOWN != MPI_PROC_NULL)
+		low[2]--;
+	    } 
+
+	  } else if (l == 2) {               
+	    // left boundary in y, need [0,1] in y, all in x, z
+	    high[1] = 1;
+
+	    // adjust based on field component
+	    if (m == 0) { // Ex
+	      high[0]--;
+	      if (WEST != MPI_PROC_NULL)
+		low[0]--;
+	    } else if (m == 2) { // Ez
+	      high[2]--;
+	      if (DOWN != MPI_PROC_NULL)
+		low[2]--;
+	    }
+	  } else if (l == 3) {
+	    // right boundary in y, need [ny-2, ny-1] in y, all x, z for 
+            // tangential and [ny-3, ny-2] in y, all x, z
+	    low[1] = ny-2;
+    
+	    // adjust based on field component
+	    if (m == 1) {
+	      high[1]--;
+	      low[1]--;
+	    } else if (m == 0) { // Ex
+	      high[0]--;
+	      if (WEST != MPI_PROC_NULL)
+		low[0]--;
+	    } else if (m == 2) { // Ez
+	      high[2]--;
+	      if (DOWN != MPI_PROC_NULL)
+		low[2]--;
+	    } 
+	  } else if (l == 4) {               
+	    // left boundary in z, need [0,1] in z, all in x, y
+	    high[2] = 1;
+
+	    // adjust based on field component
+	    if (m == 0) { // Ex
+	      high[0]--;
+	      if (WEST != MPI_PROC_NULL)
+		low[0]--;
+	    } else if (m == 1) { // Ey
+	      high[1]--;
+	      if (SOUTH != MPI_PROC_NULL)
+		low[1]--;
+	    }
+	  } else if (l == 5) {
+	    // right boundary in z, need [nz-2, nz-1] in z, all x, y for 
+            // tangential and [nz-3, nz-2] in z, all x, y for normal
+	    low[2] = nz-2;
+    
+	    // adjust based on field component
+	    if (m == 2) {
+	      high[2]--;
+	      low[2]--;
+	    } else if (m == 0) { // Ex
+	      high[0]--;
+	      if (WEST != MPI_PROC_NULL)
+		low[0]--;
+	    } else if (m == 1) { // Ey
+	      high[1]--;
+	      if (SOUTH != MPI_PROC_NULL)
+		low[1]--;
+	    } 
+	  }
+
+	  // call initializer and limit the number of recursions to at most 20
+	  if (m == 0) {
+	    bound_upd_Ex.init_face(l, low, high, delta, 20, tol);
+	  } else if (m == 1) {
+	    bound_upd_Ey.init_face(l, low, high, delta, 20, tol);
+	  } else {
+	    bound_upd_Ez.init_face(l, low, high, delta, 20, tol);
+	  }
+
+	} // end loop over components
+      }
+    } // end loop over sides
+
+    // now get some properties from the updaters that we may be interested in
+    // at a later time
+    dab_mem_use = bound_upd_Ex.get_mem_usage() + bound_upd_Ey.get_mem_usage() \
+                + bound_upd_Ez.get_mem_usage();
+
+    // get number of recursions and reflection coefficients
+    for (l = 0; l<6; ++l) {
+      if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
+	DAB_props.at(l) = bound_upd_Ex.get_num_recursions(l);
+	DAB_refl.at(l) = bound_upd_Ex.get_reflection_coef(l);
+      }
+    }
+    DAB_refl[9] = dab_mem_use;
+
+    // get info about the domain configuration 
+    DAB_props.at(6) = bound_upd_Ex.get_num_faces();
+    DAB_props.at(7) = bound_upd_Ex.get_num_edges();
+    DAB_props.at(8) = bound_upd_Ex.get_num_corners();
+    DAB_props.at(9) = bound_upd_Ey.get_num_faces();
+    DAB_props.at(10) = bound_upd_Ey.get_num_edges();
+    DAB_props.at(11) = bound_upd_Ey.get_num_corners();
+    DAB_props.at(12) = bound_upd_Ez.get_num_faces();
+    DAB_props.at(13) = bound_upd_Ez.get_num_edges();
+    DAB_props.at(14) = bound_upd_Ez.get_num_corners();
+
+  }
+
+ /*
+  // print out DAB info
+  if (MPI_Gather(DAB_props.data(), 15, MPI_INT, rDAB_props.data(), 15, MPI_INT, 0, grid_comm) != MPI_SUCCESS)
+    std::cerr << "MPI_Gather failed" << std::endl;
+  if (MPI_Gather(DAB_refl.data(), 10, MPI_DOUBLE, rDAB_refl.data(), 10, MPI_DOUBLE, 0, grid_comm) != MPI_SUCCESS)
+    std::cerr << "MPI_Gather failed" << std::endl;
+  if (my_id == 0) {
+
+    std::cout << "Domain width = " << domain_width << std::endl << std::endl;
+    double mem_total = 0;
+
+    for (l=0; l<nprocs_cubed; ++l) {
+
+      int gc[3];
+
+      MPI_Cart_coords(grid_comm, l, 3, gc);
+
+      std::cout << "Process " << l << " with logical coordinates (" << gc[0] << ", "
+		<< gc[1] << ", " << gc[2] << ") for the Ex component" << std::endl;
+      std::cout << "         with a corner at (" << rDAB_refl.at(10*l + 6) << ", "
+		<< rDAB_refl.at(10*l + 7) << ", " << rDAB_refl.at(10*l + 8) << ")" << std::endl;
+
+      std::cout << "  Left side in x:" << std::endl;
+      std::cout << "    recursions      = " << rDAB_props.at(15*l) << std::endl;
+      std::cout << "    reflection coef = " << rDAB_refl.at(10*l) << std::endl;
+      std::cout << "  Right side in x:" << std::endl;
+      std::cout << "    recursions      = " << rDAB_props.at(15*l + 1) << std::endl;
+      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 1) << std::endl;
+      std::cout << "  Left side in y:" << std::endl;
+      std::cout << "    recursions      = " << rDAB_props.at(15*l + 2) << std::endl;
+      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 2) << std::endl;
+      std::cout << "  Right side in y:" << std::endl;
+      std::cout << "    recursions      = " << rDAB_props.at(15*l + 3) << std::endl;
+      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 3) << std::endl;
+      std::cout << "  Left side in z:" << std::endl;
+      std::cout << "    recursions      = " << rDAB_props.at(15*l + 4) << std::endl;
+      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 4) << std::endl;
+      std::cout << "  Right side in z:" << std::endl;
+      std::cout << "    recursions      = " << rDAB_props.at(15*l + 5) << std::endl;
+      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 5) << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 6) << " Ex faces" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 7) << " Ex edges" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 8) << " Ex corners" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 9) << " Ey faces" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 10) << " Ey edges" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 11) << " Ey corners" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 12) << " Ez faces" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 13) << " Ez edges" << std::endl;
+      std::cout << "  " << rDAB_props.at(15*l + 14) << " Ez corners" << std::endl;
+      std::cout << "  Approx DAB Memory Use = " << rDAB_refl.at(10*l + 9) << " MB" << std::endl;
+      mem_total += rDAB_refl.at(10*l + 9);
+
+    }
+    std::cout << "  Approx Total DAB Memory Use = " << mem_total << " MB" << std::endl;
+  }
+*/
+
+  // stop timer
+  t2 = MPI_Wtime();
+  init_dab_t += t2-t1;
+}
+
