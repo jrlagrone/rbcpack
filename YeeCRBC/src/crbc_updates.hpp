@@ -409,6 +409,9 @@ class CrbcUpdates : virtual public BoundaryProperties,
     /// get the number of corners
     int get_num_corners() const {return num_corners;};
 
+    /// get approximate memory usage in MB
+    double get_mem_usage() const;
+
   private:
 
     CRBC_Data<1, DIM, DataType, IndexType, CoefType> Faces[6];  //< storage objects for face data
@@ -2405,6 +2408,25 @@ void CrbcUpdates<DIM, DataType, IndexType, CoefType>::get_crbc_props(grid::Point
 
 }
 #endif
+
+template <int DIM, class DataType, class IndexType, class CoefType>
+double CrbcUpdates<DIM, DataType, IndexType, CoefType>::get_mem_usage() const
+{
+  std::size_t i, mem_use = 0;
+
+  for (i=0; i<6; ++i)
+    if (have_face[i])
+      mem_use += Faces[i].get_mem_usage();
+
+  for (i=0; i<num_edges; ++i)
+    mem_use += Edges[i].get_mem_usage();
+
+  for (i=0; i<num_corners; ++i)
+    mem_use += Corners[i].get_mem_usage();
+
+  return (mem_use / ((double) 1024*1024));
+
+}
 
 
 } // end namespace
