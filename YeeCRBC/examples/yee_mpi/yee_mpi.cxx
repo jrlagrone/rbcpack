@@ -1422,3 +1422,201 @@ void yee_updater::step_outer_H()
 
 }
 
+
+/*******************************************************************************
+                Function to update the DAB values
+*******************************************************************************/
+void yee_updater::step_DAB()
+{
+
+  int i,j,k,l;
+  int ind[3];
+  int nxm, nym;
+  int low_ind[3], high_ind[3];
+  nxm = nx-1;
+  nym = ny-1;
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  if (isBoundaryProc) {
+
+    // loop over the boundary faces
+    for (l=0; l<6; ++l) {
+      
+      // check to see if the current face is of type CRBC
+      if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
+
+        // Ex component
+        // get the indices the updater object expects as input from this face.
+        // Note that these values are inclusive
+        bound_upd_Ex.get_input_extents(l, low_ind, high_ind);
+
+        // Because we overlapped the grid the range may extend outside of the 
+        // field arrays. To fix this, we simply change -1 -> 0 in the indexing
+        // if it occurs.
+        for (i=0;i<3; ++i)
+          low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+        // copy in the face values to the Ex faces
+        for (k=low_ind[2]; k<=high_ind[2]; ++k) {
+          for (j=low_ind[1]; j<=high_ind[1]; ++j) {
+            for (i=low_ind[0]; i<=high_ind[0]; ++i) {
+              ind[0] = i;
+              ind[1] = j;
+              ind[2] = k;
+              bound_upd_Ex.load_face_data(l, ind, Ex[i + (j + k*ny)*nxm]);
+            }
+          }
+        }
+        
+        // Ey component
+        // get the indices the updater object expects as input from this face.
+        // Note that these values are inclusive
+        bound_upd_Ey.get_input_extents(l, low_ind, high_ind);
+
+        // Because we overlapped the grid the range may extend outside of the 
+        // field arrays. To fix this, we simply change -1 -> 0 in the indexing
+        // if it occurs.
+        for (i=0;i<3; ++i)
+          low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+        // copy in the face values to the Ex faces
+        for (k=low_ind[2]; k<=high_ind[2]; ++k) {
+          for (j=low_ind[1]; j<=high_ind[1]; ++j) {
+            for (i=low_ind[0]; i<=high_ind[0]; ++i) {
+              ind[0] = i;
+              ind[1] = j;
+              ind[2] = k;
+              bound_upd_Ey.load_face_data(l, ind, Ey[i + (j + k*nym)*nx]);
+            }
+          }
+        }
+
+        // Ez component
+        // get the indices the updater object expects as input from this face.
+        // Note that these values are inclusive
+        bound_upd_Ez.get_input_extents(l, low_ind, high_ind);
+
+        // Because we overlapped the grid the range may extend outside of the 
+        // field arrays. To fix this, we simply change -1 -> 0 in the indexing
+        // if it occurs.
+        for (i=0;i<3; ++i)
+          low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+        // copy in the face values to the Ex faces
+        for (k=low_ind[2]; k<=high_ind[2]; ++k) {
+          for (j=low_ind[1]; j<=high_ind[1]; ++j) {
+            for (i=low_ind[0]; i<=high_ind[0]; ++i) {
+              ind[0] = i;
+              ind[1] = j;
+              ind[2] = k;
+              bound_upd_Ez.load_face_data(l, ind, Ez[i + (j + k*ny)*nx]);
+            }
+          }
+        }
+      } // end if crbc
+    } // end for 
+
+    // compute updates
+    bound_upd_Ex.compute_updates();
+    bound_upd_Ey.compute_updates();
+    bound_upd_Ez.compute_updates();
+
+    // now copy the updated values from the DAB back into the fields. We only
+    // need to copy the tangential fields because the normal components should
+    // already be correct from the Yee updates.
+
+    // loop over the boundary faces
+    for (l=0; l<6; ++l) {
+      
+      // check to see if the current face is of type CRBC
+      if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
+
+        // Ex component
+        if (l / 2 != 0) { // skip faces with x-normal
+
+          // get the indices the updater object expects to output from this face.
+          // Note that these values are inclusive
+          bound_upd_Ex.get_output_extents(l, low_ind, high_ind);
+
+          // Because we overlapped the grid the range may extend outside of the 
+          // field arrays. To fix this, we simply change -1 -> 0 in the indexing
+          // if it occurs.
+          for (i=0;i<3; ++i)
+            low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+          // copy in the face values to the Ex faces
+          for (k=low_ind[2]; k<=high_ind[2]; ++k) {
+            for (j=low_ind[1]; j<=high_ind[1]; ++j) {
+              for (i=low_ind[0]; i<=high_ind[0]; ++i) {
+                ind[0] = i;
+                ind[1] = j;
+                ind[2] = k;
+                Ex[i + (j + k*ny)*nxm] = bound_upd_Ex.get_new_face_vals(l, ind);
+              }
+            }
+          }
+        }
+        
+        // Ey component
+        if (l / 2 != 1) { // skip faces with y-normal
+
+          // get the indices the updater object expects as output from this face.
+          // Note that these values are inclusive
+          bound_upd_Ey.get_output_extents(l, low_ind, high_ind);
+
+          // Because we overlapped the grid the range may extend outside of the 
+          // field arrays. To fix this, we simply change -1 -> 0 in the indexing
+          // if it occurs.
+          for (i=0;i<3; ++i)
+            low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+          // copy in the face values to the Ex faces
+          for (k=low_ind[2]; k<=high_ind[2]; ++k) {
+            for (j=low_ind[1]; j<=high_ind[1]; ++j) {
+              for (i=low_ind[0]; i<=high_ind[0]; ++i) {
+                ind[0] = i;
+                ind[1] = j;
+                ind[2] = k;
+                Ey[i + (j + k*nym)*nx] = bound_upd_Ey.get_new_face_vals(l, ind);
+              }
+            }
+          }
+        }
+
+        // Ez component
+        if (l / 2 != 2) { // skip faces with z-normal
+
+          // get the indices the updater object expects as output from this face.
+          // Note that these values are inclusive
+          bound_upd_Ez.get_output_extents(l, low_ind, high_ind);
+
+          // Because we overlapped the grid the range may extend outside of the 
+          // field arrays. To fix this, we simply change -1 -> 0 in the indexing
+          // if it occurs.
+          for (i=0;i<3; ++i)
+            low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+          // copy in the face values to the Ex faces
+          for (k=low_ind[2]; k<=high_ind[2]; ++k) {
+            for (j=low_ind[1]; j<=high_ind[1]; ++j) {
+              for (i=low_ind[0]; i<=high_ind[0]; ++i) {
+                ind[0] = i;
+                ind[1] = j;
+                ind[2] = k;
+                Ez[i + (j + k*ny)*nx] = bound_upd_Ez.get_new_face_vals(l, ind);
+              }
+            }
+          }
+        }
+      } // end if crbc
+    } // end for 
+  } // end isBoundaryProc
+
+  // stop timer
+  t2 = MPI_Wtime();
+  step_DAB_t += t2-t1;
+}
+
