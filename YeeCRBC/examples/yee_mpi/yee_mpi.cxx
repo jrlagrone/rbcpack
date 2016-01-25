@@ -45,6 +45,66 @@
   #include <omp.h>
 #endif
 
+
+// for output, namely fprintf and printf
+#include <stdio.h>   
+
+// store and modify output filenames
+#include <string.h>  
+ 
+// standard libraries, we need this for malloc, free, etc.
+#include <stdlib.h>   
+
+
+void yee_updater::writeExField(int id) {
+
+    int i, j, k, npts, cells;
+
+    char fileBaseName[100];   
+    sprintf(fileBaseName, "Ex_Field_%05d.%05d.vtk", my_id, id);   
+
+    // open the file and write the VTK header information
+    FILE *f = fopen(fileBaseName, "w");
+    fprintf(f, "# vtk DataFile Version 3.0\n");
+    fprintf(f, "vtk output\n");
+    fprintf(f, "ASCII\n");
+    fprintf(f, "DATASET RECTILINEAR_GRID\n");
+
+    // set the dimensions
+    fprintf(f, "DIMENSIONS %i %i %i\n", nx-1, ny, nz);
+
+    // save the coordinates
+    fprintf(f, "X_COORDINATES %i double \n", nx-1);
+    for (i=0; i < nx-1; ++i)
+      fprintf(f, "%f\n", coord[0] + h/2.0 + i*h);
+
+    fprintf(f, "Y_COORDINATES %i double \n", ny);
+    for (j=0; j < ny; ++j)
+      fprintf(f, "%f\n", coord[1] + j*h);
+
+    fprintf(f, "Z_COORDINATES %i double \n", nz);
+    for (k=0; k < nz; ++k)
+      fprintf(f, "%f\n", coord[2] + k*h);
+
+    // set up a cell and field
+    npts = (nx-1) * ny * nz;
+    cells = (nx-2) * (ny-1) * (nz-1);
+    fprintf(f, "CELL_DATA %i\n", cells);
+    fprintf(f, "POINT_DATA %i\n", npts);
+    fprintf(f, "FIELD FieldData 1\n");
+    fprintf(f, "Ex 1 %i double\n", npts);
+
+    // now write out the data
+    for (k=0; k < nz; ++k) 
+      for (j=0; j < ny; ++j)
+	for (i=0; i < nx-1; ++i)
+	  fprintf(f, "%f\n", Ex[i + (j + k*ny)*(nx-1)]);
+  	
+
+    // close the file
+    fclose(f);
+  }
+
 /*******************************************************************************
                             constructor
 *******************************************************************************/
@@ -218,10 +278,14 @@ void yee_updater::run()
   // time step
   if (grid_comm != MPI_COMM_NULL) {
 
+    int count = 0;
+
     for (tstep = 0; tstep < ntsteps; ++tstep) {
 
       // generate output
       if (tstep % tskip == 0) {
+
+        writeExField(count++);
 
         // calculate error
 	loc_err = calc_error();
@@ -615,6 +679,7 @@ void yee_updater::calc_params()
   // do a basic check to make sure that the grid partitioning is somewhat 
   // reasonable
   if ((n[0] < 3) || (n[1] < 3) || (n[2] < 3)) {
+
     std::cerr << "Grid partitioning failed. Try decreasing h, dab_wt, and/or nprocs" << std::endl;
       MPI_Abort(glob_comm, -3);
   }
@@ -1851,7 +1916,7 @@ void yee_updater::send_DAB()
 
         // copy data auxilliary data into the send buffer
         plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ex.get_num_recursions(l);
+        phigh[0] = bound_upd_Ex.get_num_recursions(sidea);
         get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, sidea, low, high, plow, phigh);
 
         // get data extents for Ey
@@ -1871,7 +1936,7 @@ void yee_updater::send_DAB()
 
         // copy data auxilliary data into the send buffer
         plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ey.get_num_recursions(l);
+        phigh[0] = bound_upd_Ey.get_num_recursions(sidea);
         get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, sidea, low, high, plow, phigh);
 
         // get data extents for Ez
@@ -1891,7 +1956,7 @@ void yee_updater::send_DAB()
 
         // copy data auxilliary data into the send buffer
         plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ez.get_num_recursions(l);
+        phigh[0] = bound_upd_Ez.get_num_recursions(sidea);
         get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, sidea, low, high, plow, phigh);
 
       } // end loop over sides in the current direction
@@ -2025,10 +2090,6 @@ void yee_updater::recv_DAB()
 
       side = send_dirs[l];
 
-      // clear the buffers for this direction
-      DAB_sbuf[side].clear();
-      DAB_rbuf[side].clear();
-      
       // loop over the sides we need to send in the current direction
       for (m=0; m<send_sides[l].size(); ++m) {
 
@@ -2051,8 +2112,8 @@ void yee_updater::recv_DAB()
 
         // copy data auxilliary data into the send buffer
         plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ex.get_num_recursions(l);
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, count, sidea, low, high, plow, phigh);
+        phigh[0] = bound_upd_Ex.get_num_recursions(sidea);
+        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ex, count, sidea, low, high, plow, phigh);
 
         // get data extents for Ey
         // This gets us the indices for all the points on the plane
@@ -2071,8 +2132,8 @@ void yee_updater::recv_DAB()
 
         // copy data auxilliary data into the send buffer
         plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ey.get_num_recursions(l);
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, count, sidea, low, high, plow, phigh);
+        phigh[0] = bound_upd_Ey.get_num_recursions(sidea);
+        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ey, count, sidea, low, high, plow, phigh);
 
         // get data extents for Ez
         // This gets us the indices for all the points on the plane
@@ -2091,8 +2152,8 @@ void yee_updater::recv_DAB()
 
         // copy data auxilliary data into the send buffer
         plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ez.get_num_recursions(l);
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, count, sidea, low, high, plow, phigh);
+        phigh[0] = bound_upd_Ez.get_num_recursions(sidea);
+        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ez, count, sidea, low, high, plow, phigh);
 
       } // end loop over sides in the current direction
 
@@ -2115,7 +2176,7 @@ void yee_updater::recv_DAB()
           low[side / 2] = high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, count, edge, low, high, plow, phigh, true);
+        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ex, count, edge, low, high, plow, phigh, true);
 
         // Ey
         // get edge index
@@ -2133,7 +2194,7 @@ void yee_updater::recv_DAB()
           low[side / 2] = high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, count, edge, low, high, plow, phigh, true);
+        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ey, count, edge, low, high, plow, phigh, true);
 
         // Ez
         // get edge index
@@ -2151,7 +2212,7 @@ void yee_updater::recv_DAB()
           low[side / 2] = high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, count, edge, low, high, plow, phigh, true);
+        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ez, count, edge, low, high, plow, phigh, true);
 
       } // end if 2 sides
 
