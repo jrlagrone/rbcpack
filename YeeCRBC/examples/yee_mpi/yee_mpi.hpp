@@ -111,10 +111,10 @@ private:
   double Hcoef, Ecoef;
 
   // storage for mpi messages
-  std::vector<double> N_sbuf, S_sbuf, E_sbuf, W_sbuf, U_sbuf, D_sbuf;
-  std::vector<double> N_rbuf, S_rbuf, E_rbuf, W_rbuf, U_rbuf, D_rbuf;
-  std::vector<double> DAB_N_sbuf[4], DAB_S_sbuf[4], DAB_E_sbuf[4], DAB_W_sbuf[4], DAB_U_sbuf[4], DAB_D_sbuf[4];
-  std::vector<double> DAB_N_rbuf[4], DAB_S_rbuf[4], DAB_E_rbuf[4], DAB_W_rbuf[4], DAB_U_rbuf[4], DAB_D_rbuf[4];
+  std::vector<double> E_sbuf[6];
+  std::vector<double> E_rbuf[6];
+  std::vector<double> DAB_sbuf[6];
+  std::vector<double> DAB_rbuf[6];
 
   double eps, mu, gamma, tau, io_t, c;
   double T, dt, h, Etime, Htime;
@@ -131,7 +131,8 @@ private:
   crbc::BoundaryProperties::Boundary procBounds[6];
   int NORTH, EAST, SOUTH, WEST, UP, DOWN;
   int my_id, cart_rank[3];
-  crbc::CrbcUpdates<3, double, int> bound_upd_Ex,  bound_upd_Ey,  bound_upd_Ez;
+  std::vector<int> send_dirs, send_mpi_dirs, send_sides[4];
+  crbc::CrbcUpdates<3, double, int> bound_upd_Ex, bound_upd_Ey, bound_upd_Ez;
   MPI_Comm grid_comm, glob_comm;
   std::vector<MPI_Request> send_req, recv_req;
   std::vector<MPI_Request> DAB_send_req, DAB_recv_req;
@@ -194,6 +195,10 @@ private:
                          const int *phigh,
                          const bool &isedge = false);
 
+  /// function to indentify the sides and edges that need to be sent to update
+  /// the DAB layer
+  void calc_DAB_send_params();
+
   /// send DAB values between processes
   void send_DAB();
  
@@ -213,7 +218,7 @@ private:
   double calc_norm();
   
   /// calculate the error at the current time
-  double calc_err();
+  double calc_error();
                 
 };
 

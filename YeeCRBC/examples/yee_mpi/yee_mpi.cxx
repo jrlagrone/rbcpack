@@ -224,7 +224,7 @@ void yee_updater::run()
       if (tstep % tskip == 0) {
 
         // calculate error
-	loc_err = calc_err();
+	loc_err = calc_error();
 
 	glob_err = 0.0;
 
@@ -273,7 +273,7 @@ void yee_updater::run()
     } // end time stepping
 
     // calculate final error
-    loc_err = calc_err();
+    loc_err = calc_error();
   
     glob_err = 0.0;
 
@@ -324,21 +324,15 @@ void yee_updater::print_mem_use() const
           Hx.capacity() + Hy.capacity() + Hz.capacity()) / ((double) 1024*1024);
 
     // calculate the size of the E send/recieve buffers
-    ebuff =  sizeof(double)*(N_sbuf.capacity() + S_sbuf.capacity() + 
-             E_sbuf.capacity() + W_sbuf.capacity() + U_sbuf.capacity() + 
-             D_sbuf.capacity() + N_rbuf.capacity() + S_rbuf.capacity() + 
-             E_rbuf.capacity() + W_rbuf.capacity() + U_rbuf.capacity() + 
-             D_rbuf.capacity()) / ((double) 1024*1024);
+    ebuff = 0;    
+    for (int i=0; i<6; ++i)
+      ebuff +=  sizeof(double)*(E_sbuf[i].capacity() + E_rbuf[i].capacity()) \
+            / ((double) 1024*1024);
 
     // calculate the size of the DAB buffers
     dab_buff = 0;
-    for (int i=0; i<4; ++i)
-      dab_buff += sizeof(double)*(DAB_N_sbuf[i].capacity() + DAB_S_sbuf[i].capacity()
-                + DAB_E_sbuf[i].capacity() + DAB_W_sbuf[i].capacity() 
-                + DAB_U_sbuf[i].capacity() + DAB_D_sbuf[i].capacity() + 
-                  DAB_N_rbuf[i].capacity() + DAB_S_rbuf[i].capacity() + 
-                  DAB_E_rbuf[i].capacity() + DAB_W_rbuf[i].capacity() + 
-                  DAB_U_rbuf[i].capacity() + DAB_D_rbuf[i].capacity()) 
+    for (int i=0; i<6; ++i)
+      dab_buff += sizeof(double)*(DAB_sbuf[i].capacity() + DAB_rbuf[i].capacity()) \
                 / ((double) 1024*1024);
 
     // calculate total mem use (dab_mem_use is calculate in init_DAB())
@@ -795,30 +789,12 @@ void yee_updater::allocate_memory()
 
   // allocate buffer space for the worst possible case. We could use slightly
   // less memory here by figuring out the exact sizes we need.
-  if (procBounds[0] == crbc::BoundaryProperties::NONE) {
-    W_sbuf.assign(2*maxn*maxn, 0.0);
-    W_rbuf.assign(2*maxn*maxn, 0.0);
+  for (int i=0; i<6; ++i) {
+    if (procBounds[i] == crbc::BoundaryProperties::NONE) {
+      E_sbuf[i].assign(2*maxn*maxn, 0.0);
+      E_rbuf[i].assign(2*maxn*maxn, 0.0);
+    }
   }
-  if (procBounds[1] == crbc::BoundaryProperties::NONE) {
-    E_sbuf.assign(2*maxn*maxn, 0.0);
-    E_rbuf.assign(2*maxn*maxn, 0.0);
-  }
-  if (procBounds[2] == crbc::BoundaryProperties::NONE) {
-    S_sbuf.assign(2*maxn*maxn, 0.0);
-    S_rbuf.assign(2*maxn*maxn, 0.0);
-  }
-  if (procBounds[3] == crbc::BoundaryProperties::NONE) {
-    N_sbuf.assign(2*maxn*maxn, 0.0);
-    N_rbuf.assign(2*maxn*maxn, 0.0);
-  }
-  if (procBounds[4] == crbc::BoundaryProperties::NONE) {
-    D_sbuf.assign(2*maxn*maxn, 0.0);
-    D_rbuf.assign(2*maxn*maxn, 0.0);
-  }
-  if (procBounds[5] == crbc::BoundaryProperties::NONE) {
-    U_sbuf.assign(2*maxn*maxn, 0.0);
-    U_rbuf.assign(2*maxn*maxn, 0.0);
-  }   
 
   // stop timer
   t2 = MPI_Wtime();
@@ -1138,6 +1114,9 @@ void yee_updater::init_DAB()
     std::cout << "  Approx Total DAB Memory Use = " << mem_total << " MB" << std::endl;
   }
 */
+
+  // figure out the message passing configuration
+  calc_DAB_send_params();
 
   // stop timer
   t2 = MPI_Wtime();
@@ -1619,4 +1598,1243 @@ void yee_updater::step_DAB()
   t2 = MPI_Wtime();
   step_DAB_t += t2-t1;
 }
+
+
+/*******************************************************************************
+                Function to get DAB values 
+*******************************************************************************/
+void yee_updater::get_dab_vals_loop(std::vector<double> &buffer,
+                         crbc::CrbcUpdates<3, double, int> &updater,
+                         const int &side,
+                         const int *low,
+                         const int *high,
+                         const int *plow,
+                         const int *phigh,
+                         const bool &isedge) 
+{
+
+  int i,j,k,p,q, ind[3];
+
+  if (isedge) {
+    int pind[2];
+    for (p=plow[0]; p<=phigh[0]; ++p) {
+	pind[0] = p;
+	for (q=plow[1]; q<=phigh[1]; ++q) {
+	  pind[1] = q;
+	  for (k=low[2]; k<=high[2]; ++k) {
+	    ind[2] = k;
+	    for (j=low[1]; j<=high[1]; ++j) {
+	      ind[1] = j;
+	      for (i=low[0]; i<=high[0]; ++i) {
+		ind[0] = i;
+		buffer.push_back(updater.get_edge_auxiliary_vars(side, ind, pind));
+	      } // i
+	    } // j
+	  } // k
+	} // q
+      } // p
+    } else {
+      for (p=plow[0]; p<=phigh[0]; ++p) {
+	for (k=low[2]; k<=high[2]; ++k) {
+	  ind[2] = k;
+	  for (j=low[1]; j<=high[1]; ++j) {
+	    ind[1] = j;
+	    for (i=low[0]; i<=high[0]; ++i) {
+	      ind[0] = i;
+	      buffer.push_back(updater.get_auxiliary_vars(side, ind, p));
+	    } // i
+	  } // j
+	} // k
+      } // p
+    }
+  }
+
+
+/*******************************************************************************
+                Function to set DAB values 
+*******************************************************************************/
+void yee_updater::set_dab_vals_loop(std::vector<double> &buffer,
+                         crbc::CrbcUpdates<3, double, int> &updater,
+                         int &count,
+                         const int &side,
+                         const int *low,
+                         const int *high,
+                         const int *plow,
+                         const int *phigh,
+                         const bool &isedge) 
+{
+    int i,j,k,p,q, ind[3];
+
+    if (isedge) {
+      int pind[2];
+      for (p=plow[0]; p<=phigh[0]; ++p) {
+	pind[0] = p;
+	for (q=plow[1]; q<=phigh[1]; ++q) {
+	  pind[1] = q;
+	  for (k=low[2]; k<=high[2]; ++k) {
+	    ind[2] = k;
+	    for (j=low[1]; j<=high[1]; ++j) {
+	      ind[1] = j;
+	      for (i=low[0]; i<=high[0]; ++i) {
+		ind[0] = i;
+		updater.set_edge_auxiliary_vars(side, ind, pind, buffer[count++]);
+
+                
+	      } // i
+	    } // j
+	  } // k
+	} // q
+      } // p
+    } else {
+      for (p=plow[0]; p<=phigh[0]; ++p) {
+	for (k=low[2]; k<=high[2]; ++k) {
+	  ind[2] = k;
+	  for (j=low[1]; j<=high[1]; ++j) {
+	    ind[1] = j;
+	    for (i=low[0]; i<=high[0]; ++i) {
+	      ind[0] = i;
+	      updater.set_auxiliary_vars(side, ind, p, buffer[count++]);
+	    } // i
+	  } // j
+	} // k
+      } // p
+    }
+  }
+
+
+/*******************************************************************************
+                Function identify what needs to be sent of the DAB
+*******************************************************************************/
+void yee_updater::calc_DAB_send_params()
+{
+
+  // note this only checks the cases possible in this implementation. A more 
+  // generic implementation would need to handle more cases. In particular, we
+  // can't have 2 parallel faces need to pass data from the same process since
+  // we are assuming each direction has the same number of processes abd we do 
+  // not need to pass any information if we only have 1 process.
+
+  unsigned int l, m, tang_sides[4];
+
+  // first identify the directions that we need to send
+  for (l=0; l<6; ++l) { // loop over sides
+    if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
+      for (m=0; m<6; ++m) { // loop over sides
+        if (l/2 == m/2)
+          continue; // skip parallel sides
+        if (procBounds[m] == crbc::BoundaryProperties::NONE)
+          send_dirs.push_back(m);
+      }
+    } 
+  }
+
+  // remove any duplicates in send_dirs
+  std::sort(send_dirs.begin(), send_dirs.end());
+  auto last = std::unique(send_dirs.begin(), send_dirs.end());
+  send_dirs.erase(last, send_dirs.end());
+
+  // loop over the send directions
+  for (l=0; l<send_dirs.size(); ++l) {
+
+    // figure out which sides need to send in the current direction
+    // start by listing the tangential sides
+    switch (send_dirs[l] % 2) {
+
+      case 0: // outward normal is +/-x
+        tang_sides[0] = 2; // left y
+        tang_sides[1] = 3; // right y
+        tang_sides[2] = 4; // left z
+        tang_sides[3] = 5; // right z
+        break;
+      case 1: // outward normal is +/-y
+        tang_sides[0] = 0; // left x
+        tang_sides[1] = 1; // right x
+        tang_sides[2] = 4; // left z
+        tang_sides[3] = 5; // right z
+        break;
+      case 2: // outward normal is +/-z
+        tang_sides[0] = 0; // left x
+        tang_sides[1] = 1; // right x
+        tang_sides[2] = 2; // left y
+        tang_sides[3] = 3; // left z
+        break;
+    }
+
+    // check to see if any of the tangetial sides are a DAB/CRBC boundary
+    for (m=0; m<4; ++m) {
+      if (procBounds[tang_sides[m]] == crbc::BoundaryProperties::CRBC) {
+        send_sides[l].push_back(tang_sides[m]);
+      }
+    }
+  }
+
+  // finally change the directions from local side indices to the MPI ranks in 
+  // the appropriate direction
+  for (l=0; l<send_dirs.size(); ++l) {
+    switch (send_dirs[l]) {
+            
+      case 0: // WEST
+        send_mpi_dirs.push_back(WEST);
+        break;
+      case 1: // EAST
+        send_mpi_dirs.push_back(EAST);
+        break;
+      case 2: // SOUTH
+        send_mpi_dirs.push_back(SOUTH);
+        break;
+      case 3: // NORTH
+        send_mpi_dirs.push_back(NORTH);
+        break;
+      case 4: // DOWN
+        send_mpi_dirs.push_back(DOWN);
+        break;
+      case 5: // UP
+        send_mpi_dirs.push_back(UP);
+        break;
+    }
+  }
+}
+
+/*******************************************************************************
+                Function to send DAB values 
+*******************************************************************************/
+void yee_updater::send_DAB()
+{
+
+  // notice that we could make this much shorter if we declared the DAB updaters
+  // as an array instead of individually for each component. We hope this 
+  // presentation is slightly clearer.
+
+  unsigned int l,m, side, edge, sidea;
+  int low[3], high[3], plow[2], phigh[2];
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  if (isBoundaryProc) {
+
+    // loop over the directions we need to send
+    for (l=0; l<send_dirs.size(); ++l) {
+
+      side = send_dirs[l];
+
+      // clear the buffers for this direction
+      DAB_sbuf[side].clear();
+      DAB_rbuf[side].clear();
+      
+      // loop over the sides we need to send in the current direction
+      for (m=0; m<send_sides[l].size(); ++m) {
+
+        sidea = send_sides[l].at(m);
+
+        // get data extents for Ex
+        // This gets us the indices for all the points on the plane
+        // parallel to the phyiscal boundary
+        bound_upd_Ex.get_output_extents(sidea, low, high);
+
+        // now we need to restrict to second to last line of points parallel to 
+        // the boundary we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+
+        // copy data auxilliary data into the send buffer
+        plow[0] = 0; // auxilliary index bounds
+        phigh[0] = bound_upd_Ex.get_num_recursions(l);
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, sidea, low, high, plow, phigh);
+
+        // get data extents for Ey
+        // This gets us the indices for all the points on the plane
+        // parallel to the phyiscal boundary
+        bound_upd_Ey.get_output_extents(sidea, low, high);
+
+        // now we need to restrict to second to last line of points parallel to 
+        // the boundary we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+
+        // copy data auxilliary data into the send buffer
+        plow[0] = 0; // auxilliary index bounds
+        phigh[0] = bound_upd_Ey.get_num_recursions(l);
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, sidea, low, high, plow, phigh);
+
+        // get data extents for Ez
+        // This gets us the indices for all the points on the plane
+        // parallel to the phyiscal boundary
+        bound_upd_Ez.get_output_extents(sidea, low, high);
+
+        // now we need to restrict to second to last line of points parallel to 
+        // the boundary we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+
+        // copy data auxilliary data into the send buffer
+        plow[0] = 0; // auxilliary index bounds
+        phigh[0] = bound_upd_Ez.get_num_recursions(l);
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, sidea, low, high, plow, phigh);
+
+      } // end loop over sides in the current direction
+
+      // now send any edge data
+      if (send_sides[l].size() == 2) {
+
+        // Ex
+        // get edge index
+        edge = bound_upd_Ex.get_edge_index(send_sides[l][0], send_sides[l][1]);
+        // get edge data extents
+        bound_upd_Ex.get_edge_extents(edge, low, high, plow, phigh);
+
+        // now we need to restrict to second to last point parallel to 
+        // the boundaries we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+        // the true at the end tells the function plow, phigh are arrays of len 2
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, sidea, low, high, plow, phigh, true);
+
+        // Ey
+        // get edge index
+        edge = bound_upd_Ey.get_edge_index(send_sides[l][0], send_sides[l][1]);
+        // get edge data extents
+        bound_upd_Ey.get_edge_extents(edge, low, high, plow, phigh);
+
+        // now we need to restrict to second to last point parallel to 
+        // the boundaries we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+        // the true at the end tells the function plow, phigh are arrays of len 2
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, sidea, low, high, plow, phigh, true);
+
+        // Ez
+        // get edge index
+        edge = bound_upd_Ez.get_edge_index(send_sides[l][0], send_sides[l][1]);
+        // get edge data extents
+        bound_upd_Ez.get_edge_extents(edge, low, high, plow, phigh);
+
+        // now we need to restrict to second to last point parallel to 
+        // the boundaries we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+        // the true at the end tells the function plow, phigh are arrays of len 2
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, sidea, low, high, plow, phigh, true);
+
+      } // end if 2 sides
+
+      // now actually send the data. We use non-blocking sends in the hope that
+      // the time it takes to compute the H-field updates will mask most or all
+      // of the communication
+
+      // create and save requests
+      MPI_Request sreq, rreq;
+
+      DAB_send_req.push_back(sreq);
+      DAB_recv_req.push_back(rreq);
+
+      // Send --- we use a tag of 1 for DAB send and 0 for E-field sends
+      if (MPI_Isend(DAB_sbuf[side].data(), DAB_sbuf[side].size(), MPI_DOUBLE, \
+          send_mpi_dirs[l], 1, grid_comm, &DAB_send_req.back()) != MPI_SUCCESS)
+                std::cerr << "MPI_Isend failed" << std::endl;
+
+      // make sure the recieve buffer is large enough
+      if (DAB_rbuf[side].size() < DAB_sbuf[side].size())
+        DAB_rbuf[side].assign(DAB_sbuf[side].size(), 0.0);
+
+      // Recieve
+      if (MPI_Irecv(DAB_rbuf[side].data(), DAB_rbuf[side].size(), MPI_DOUBLE, 
+          send_mpi_dirs[l], 1, grid_comm, &DAB_recv_req.back()) != MPI_SUCCESS)
+                std::cerr << "MPI_Isend failed" << std::endl;
+
+    } // end loop over send directions
+
+  } // end if boundary proc
+  
+  // stop timer
+  t2 = MPI_Wtime();
+  send_DAB_t += t2-t1;
+} // end send_DAB
+
+/*******************************************************************************
+                Function to receive DAB values 
+*******************************************************************************/
+void yee_updater::recv_DAB()
+{
+  
+  // note the recieve directions are the same as the send directions, so we do
+  // almost exactly the same thing here as in send_DAB() except we copy from the
+  // buffers to the DAB.
+  unsigned int l,m, side, edge, sidea;
+  int count;
+  int low[3], high[3], plow[2], phigh[2];
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  // make sure all of the recieves are complete before we use the data
+  if (MPI_Waitall(DAB_recv_req.size(), DAB_recv_req.data(), MPI_STATUSES_IGNORE) != MPI_SUCCESS)
+    std::cerr << "MPI_Waitall failed (DAB_recv_req)" << std::endl;
+
+  DAB_recv_req.clear();
+
+  // copy the values from the buffers
+  if (isBoundaryProc) {
+
+    // loop over the directions we need to send
+    for (l=0; l<send_dirs.size(); ++l) {
+
+      // used for indexing
+      count = 0;
+
+      side = send_dirs[l];
+
+      // clear the buffers for this direction
+      DAB_sbuf[side].clear();
+      DAB_rbuf[side].clear();
+      
+      // loop over the sides we need to send in the current direction
+      for (m=0; m<send_sides[l].size(); ++m) {
+
+        sidea = send_sides[l].at(m);
+
+        // get data extents for Ex
+        // This gets us the indices for all the points on the plane
+        // parallel to the phyiscal boundary
+        bound_upd_Ex.get_output_extents(sidea, low, high);
+
+        // now we need to restrict to second to last line of points parallel to 
+        // the boundary we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+
+        // copy data auxilliary data into the send buffer
+        plow[0] = 0; // auxilliary index bounds
+        phigh[0] = bound_upd_Ex.get_num_recursions(l);
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, count, sidea, low, high, plow, phigh);
+
+        // get data extents for Ey
+        // This gets us the indices for all the points on the plane
+        // parallel to the phyiscal boundary
+        bound_upd_Ey.get_output_extents(sidea, low, high);
+
+        // now we need to restrict to second to last line of points parallel to 
+        // the boundary we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+
+        // copy data auxilliary data into the send buffer
+        plow[0] = 0; // auxilliary index bounds
+        phigh[0] = bound_upd_Ey.get_num_recursions(l);
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, count, sidea, low, high, plow, phigh);
+
+        // get data extents for Ez
+        // This gets us the indices for all the points on the plane
+        // parallel to the phyiscal boundary
+        bound_upd_Ez.get_output_extents(sidea, low, high);
+
+        // now we need to restrict to second to last line of points parallel to 
+        // the boundary we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+
+        // copy data auxilliary data into the send buffer
+        plow[0] = 0; // auxilliary index bounds
+        phigh[0] = bound_upd_Ez.get_num_recursions(l);
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, count, sidea, low, high, plow, phigh);
+
+      } // end loop over sides in the current direction
+
+      // now send any edge data
+      if (send_sides[l].size() == 2) {
+
+        // Ex
+        // get edge index
+        edge = bound_upd_Ex.get_edge_index(send_sides[l][0], send_sides[l][1]);
+        // get edge data extents
+        bound_upd_Ex.get_edge_extents(edge, low, high, plow, phigh);
+
+        // now we need to restrict to second to last point parallel to 
+        // the boundaries we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+        // the true at the end tells the function plow, phigh are arrays of len 2
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, count, sidea, low, high, plow, phigh, true);
+
+        // Ey
+        // get edge index
+        edge = bound_upd_Ey.get_edge_index(send_sides[l][0], send_sides[l][1]);
+        // get edge data extents
+        bound_upd_Ey.get_edge_extents(edge, low, high, plow, phigh);
+
+        // now we need to restrict to second to last point parallel to 
+        // the boundaries we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+        // the true at the end tells the function plow, phigh are arrays of len 2
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, count, sidea, low, high, plow, phigh, true);
+
+        // Ez
+        // get edge index
+        edge = bound_upd_Ez.get_edge_index(send_sides[l][0], send_sides[l][1]);
+        // get edge data extents
+        bound_upd_Ez.get_edge_extents(edge, low, high, plow, phigh);
+
+        // now we need to restrict to second to last point parallel to 
+        // the boundaries we are sending. side / 2 gives us the component of the
+        // extents we need to modify and side % 2 tells us if we need to modify
+        // the low or high extents
+        if (side % 2 == 0) { // left side in the appropriate direction
+          high[side / 2] = ++low[side / 2];
+        } else { // right side in the appropriate direction
+          low[side / 2] = --high[side / 2];       
+        }
+        // the true at the end tells the function plow, phigh are arrays of len 2
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, count, sidea, low, high, plow, phigh, true);
+
+      } // end if 2 sides
+
+    } // end loop over send directions
+
+  } // end if boundary proc
+
+  // make sure all the sends have completed
+  if (MPI_Waitall(DAB_send_req.size(), DAB_send_req.data(), MPI_STATUSES_IGNORE) != MPI_SUCCESS)
+      std::cerr << "MPI_Waitall failed (DAB_send_req)" << std::endl;
+
+  DAB_send_req.clear();
+  
+  // stop timer
+  t2 = MPI_Wtime();
+  recv_DAB_t += t2-t1;
+
+} // end receive DAB
+
+
+/*******************************************************************************
+                Function to send E field values 
+*******************************************************************************/
+void yee_updater::send_E()
+{
+  // we just handle each case explicitly, but note that it wouldn't be terribly
+  // difficult to greatly reduce the code here
+ 
+  int i,j,k;
+  int ns = maxn*maxn;
+  int nxm, nym, nzm;
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  // send the last plane of points we were able to update for the tangential 
+  // components
+  if (procBounds[0] == crbc::BoundaryProperties::NONE) { // left side in x, send Ey, Ez
+
+    MPI_Request sreq, rreq;
+
+    send_req.push_back(sreq);
+    recv_req.push_back(rreq);
+
+    // copy Ey and Ez to buffer
+    i = 1; // grid overlap
+    for (k = 0; k<nz; ++k)
+      for (j=0; j<nym; ++j)
+        E_sbuf[0][j + k*nym] = Ey[i + (j + k*nym)*nx];
+
+      for (k = 0; k<nzm; ++k)
+        for (j=0; j<ny; ++j)
+          E_sbuf[0][ns + j + k*ny] = Ez[i + (j + k*ny)*nx];
+
+      if (MPI_Isend(E_sbuf[0].data(), 2*ns, MPI_DOUBLE, WEST, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+      if (MPI_Irecv(E_rbuf[0].data(), 2*ns, MPI_DOUBLE, WEST, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+    }
+
+    if (procBounds[1] == crbc::BoundaryProperties::NONE) { // right side in x, send Ey, Ez
+
+      MPI_Request sreq, rreq;
+
+      send_req.push_back(sreq);
+      recv_req.push_back(rreq);
+
+      // copy Ey and Ez to buffer
+      i = nx-2; // overlap
+      for (k = 0; k<nz; ++k)
+        for (j=0; j<nym; ++j)
+          E_sbuf[1][j + k*nym] = Ey[i + (j + k*nym)*nx];
+
+      for (k = 0; k<nzm; ++k)
+        for (j=0; j<ny; ++j)
+          E_sbuf[1][ns + j + k*ny] = Ez[i + (j + k*ny)*nx];
+
+      if (MPI_Isend(E_sbuf[1].data(), 2*ns, MPI_DOUBLE, EAST, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+      if (MPI_Irecv(E_rbuf[1].data(), 2*ns, MPI_DOUBLE, EAST, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+    }
+
+    if (procBounds[2] == crbc::BoundaryProperties::NONE) { // left side in y, send Ex, Ez
+
+      MPI_Request sreq, rreq;
+
+      send_req.push_back(sreq);
+      recv_req.push_back(rreq);
+
+      // copy Ex and Ez to buffer
+      j = 1; // overlap
+      for (k = 0; k<nz; ++k)
+        for (i=0; i<nxm; ++i)
+          E_sbuf[2][i + k*nxm] = Ex[i + (j + k*ny)*nxm];
+
+      for (k = 0; k<nzm; ++k)
+        for (i=0; i<nx; ++i)
+          E_sbuf[2][ns + i + k*nx] = Ez[i + (j + k*ny)*nx];
+
+      if (MPI_Isend(E_sbuf[2].data(), 2*ns, MPI_DOUBLE, SOUTH, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+      if (MPI_Irecv(E_rbuf[2].data(), 2*ns, MPI_DOUBLE, SOUTH, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+    }
+
+    if (procBounds[3] == crbc::BoundaryProperties::NONE) { // right side in y, send Ex, Ez
+
+      MPI_Request sreq, rreq;
+
+      send_req.push_back(sreq);
+      recv_req.push_back(rreq);
+
+      // copy Ex and Ez to buffer
+      j = ny-2; // overlap
+      for (k = 0; k<nz; ++k)
+        for (i=0; i<nxm; ++i)
+          E_sbuf[3][i + k*nxm] = Ex[i + (j + k*ny)*nxm];
+
+      for (k = 0; k<nzm; ++k)
+        for (i=0; i<nx; ++i)
+          E_sbuf[3][ns + i + k*nx] = Ez[i + (j + k*ny)*nx];
+
+      if (MPI_Isend(E_sbuf[3].data(), 2*ns, MPI_DOUBLE, NORTH, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+      if (MPI_Irecv(E_rbuf[3].data(), 2*ns, MPI_DOUBLE, NORTH, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+    }
+
+    if (procBounds[4] == crbc::BoundaryProperties::NONE) { // left side in z, send Ex, Ey
+
+      MPI_Request sreq, rreq;
+
+      send_req.push_back(sreq);
+      recv_req.push_back(rreq);
+
+      // copy Ex and Ey to buffer
+      k = 1; // overlap
+      for (j = 0; j<ny; ++j)
+        for (i=0; i<nxm; ++i)
+          E_sbuf[4][i + j*nxm] = Ex[i + (j + k*ny)*nxm];
+
+      for (j = 0; j<nym; ++j)
+        for (i=0; i<nx; ++i)
+          E_sbuf[4][ns + i + j*nx] = Ey[i + (j + k*nym)*nx];
+
+      if (MPI_Isend(E_sbuf[4].data(), 2*ns, MPI_DOUBLE, DOWN, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+      if (MPI_Irecv(E_rbuf[4].data(), 2*ns, MPI_DOUBLE, DOWN, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+    }
+
+    if (procBounds[5] == crbc::BoundaryProperties::NONE) { // right side in z, send Ex, Ey
+
+      MPI_Request sreq, rreq;
+
+      send_req.push_back(sreq);
+      recv_req.push_back(rreq);
+
+      // copy Ex and Ey to buffer
+      k = nz-2; // overlap
+      for (j = 0; j<ny; ++j)
+        for (i=0; i<nxm; ++i)
+          E_sbuf[5][i + j*nxm] = Ex[i + (j + k*ny)*nxm];
+
+      for (j = 0; j<nym; ++j)
+        for (i=0; i<nx; ++i)
+          E_sbuf[5][ns + i + j*nx] = Ey[i + (j + k*nym)*nx];
+
+      if (MPI_Isend(E_sbuf[5].data(), 2*ns, MPI_DOUBLE, UP, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+      if (MPI_Irecv(E_rbuf[5].data(), 2*ns, MPI_DOUBLE, UP, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+    }
+
+  // stop timer
+  t2 = MPI_Wtime();
+  send_E_t += t2-t1;
+
+}
+
+/*******************************************************************************
+                Function to receive E field values 
+*******************************************************************************/
+void yee_updater::recv_E()
+{
+  // again we just handle all the cases explicitly
+
+  int i,j,k;
+  int ns = maxn*maxn;
+  int nxm, nym, nzm;
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+  double t1, t2;
+  t1 = MPI_Wtime();
+
+  // make sure all of the recieves are complete
+  if (MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE) != MPI_SUCCESS)
+    std::cerr << "MPI_Waitall failed (recv_req)" << std::endl;
+
+  // copy the values from the buffers
+  recv_req.clear();
+
+  if (procBounds[0] == crbc::BoundaryProperties::NONE) { // left side in x, recieve Ey, Ez
+
+    // copy Ey and Ez from buffer
+    i = 0;
+    for (k = 0; k<nz; ++k)
+      for (j=0; j<nym; ++j)
+        Ey[i + (j + k*nym)*nx] = E_rbuf[0][j + k*nym];
+
+    for (k = 0; k<nzm; ++k)
+      for (j=0; j<ny; ++j)
+        Ez[i + (j + k*ny)*nx] = E_rbuf[0][ns + j + k*ny];
+
+  }
+
+  if (procBounds[1] == crbc::BoundaryProperties::NONE) { // right side in x, recieve Ey, Ez
+
+    // copy Ey and Ez from buffer
+    i = nx-1;
+    for (k = 0; k<nz; ++k)
+      for (j=0; j<nym; ++j)
+        Ey[i + (j + k*nym)*nx] = E_rbuf[1][j + k*nym];
+
+    for (k = 0; k<nzm; ++k)
+      for (j=0; j<ny; ++j)
+        Ez[i + (j + k*ny)*nx] = E_rbuf[1][ns + j + k*ny];
+
+  }
+
+  if (procBounds[2] == crbc::BoundaryProperties::NONE) { // left side in y, recieve Ex, Ez
+
+    // copy Ex and Ez from buffer
+    j = 0; 
+    for (k = 0; k<nz; ++k)
+      for (i=0; i<nxm; ++i)
+        Ex[i + (j + k*ny)*nxm] = E_rbuf[2][i + k*nxm];
+
+    for (k = 0; k<nzm; ++k)
+      for (i=0; i<nx; ++i)
+        Ez[i + (j + k*ny)*nx] = E_rbuf[2][ns + i + k*nx];
+
+  }
+
+  if (procBounds[3] == crbc::BoundaryProperties::NONE) { // right side in y, recieve Ex, Ez
+
+    // copy Ex and Ez from buffer
+    j = ny-1;
+    for (k = 0; k<nz; ++k)
+      for (i=0; i<nxm; ++i)
+        Ex[i + (j + k*ny)*nxm] = E_rbuf[3][i + k*nxm];
+
+    for (k = 0; k<nzm; ++k)
+      for (i=0; i<nx; ++i)
+        Ez[i + (j + k*ny)*nx] = E_rbuf[3][ns + i + k*nx];
+
+  }
+
+  if (procBounds[4] == crbc::BoundaryProperties::NONE) { // left side in z, recieve Ex, Ey
+
+    // copy Ex and Ey from buffer
+    k = 0;
+    for (j = 0; j<ny; ++j)
+      for (i=0; i<nxm; ++i)
+        Ex[i + (j + k*ny)*nxm] = E_rbuf[4][i + j*nxm];
+
+    for (j = 0; j<nym; ++j)
+      for (i=0; i<nx; ++i)
+        Ey[i + (j + k*nym)*nx] = E_rbuf[4][ns + i + j*nx];
+
+  }
+
+  if (procBounds[5] == crbc::BoundaryProperties::NONE) { // right side in z, recieve Ex, Ey
+
+    // copy Ex and Ey from buffer
+    k = nz-1;
+    for (j = 0; j<ny; ++j)
+      for (i=0; i<nxm; ++i)
+        Ex[i + (j + k*ny)*nxm] = E_rbuf[5][i + j*nxm];
+
+      for (j = 0; j<nym; ++j)
+        for (i=0; i<nx; ++i)
+          Ey[i + (j + k*nym)*nx] = E_rbuf[5][ns + i + j*nx];
+
+  }
+
+  // make sure all the sends have completed
+  if (MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE) != MPI_SUCCESS)
+    std::cerr << "MPI_Waitall failed (send_req)" << std::endl;
+
+  send_req.clear();
+
+  t2 = MPI_Wtime();
+  recv_E_t += t2-t1;
+}
+
+
+/*******************************************************************************
+                Function to load intitial values
+*******************************************************************************/
+void yee_updater::load_initial_conds() {
+
+  int i,j,k, nxm, nym, nzm;
+  double x[3];
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+  double t1, t2;
+  t1 = MPI_Wtime();
+
+  // set the solution routine to use the Yee schemes FD operator to compute the
+  // curl in the solution. We do this to get a numerically div free initial 
+  // condition
+  sol_obj.set_derivative_method(maxwell_solutions::FD_YEE);
+
+  #if USE_OPENMP
+  #pragma omp parallel default(shared) private(i,j,k,x,sol_obj)
+  {
+  #endif
+
+    // load Ex values
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k<nz; ++k) {
+      for (j=0; j<ny; ++j) {
+	for (i=0; i<nxm; ++i) {
+          x[2] = coord[2] + h*k;
+          x[1] = coord[1] + h*j;
+	  x[0] = coord[0] + h*i + h/2.0;
+	  Ex[i + (j + k*ny)*nxm] = sol_obj.get_Ex_solution(x, Etime);
+	}
+      }
+    }
+
+    // load Ey values
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k<nz; ++k) {
+      for (j=0; j<nym; ++j) {
+        for (i=0; i<nx; ++i) {
+          x[2] = coord[2] + h*k;
+          x[1] = coord[1] + h*j + h/2.0;
+          x[0] = coord[0] + h*i;
+          Ey[i + (j + k*nym)*nx] = sol_obj.get_Ey_solution(x, Etime);
+        }
+      }
+    }
+
+    // load Ez values
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k<nzm; ++k) {
+      for (j=0; j<ny; ++j) {
+        for (i=0; i<nx; ++i) {
+          x[2] = coord[2] + h*k + h/2.0;
+          x[1] = coord[1] + h*j;
+          x[0] = coord[0] + h*i;
+          Ez[i + (j + k*ny)*nx] = sol_obj.get_Ez_solution(x, Etime);
+        }
+      }
+    }
+
+    // load Hx values
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k<nzm; ++k) {
+      for (j=0; j<nym; ++j) {
+        for (i=0; i<nx; ++i) {
+          x[2] = coord[2] + h*k+ h/2.0;
+          x[1] = coord[1] + h*j+ h/2.0;
+          x[0] = coord[0] + h*i;
+          Hx[i + (j + k*nym)*nx] = sol_obj.get_Hx_solution(x, Htime);
+        }
+      }
+    }
+
+    // load Hy values
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k<nzm; ++k) {
+      for (j=0; j<ny; ++j) {
+        for (i=0; i<nxm; ++i) {
+          x[2] = coord[2] + h*k+ h/2.0;
+          x[1] = coord[1] + h*j;
+          x[0] = coord[0] + h*i+ h/2.0;
+          Hy[i + (j + k*ny)*nxm] = sol_obj.get_Hy_solution(x, Htime);
+        }
+      }
+    }
+
+    // load Hz values
+    #if USE_OPENMP
+    #pragma omp for collapse(3)
+    #endif
+    for (k=0; k<nz; ++k) {
+      for (j=0; j<nym; ++j) {
+        for (i=0; i<nxm; ++i) {
+          x[2] = coord[2] + h*k;
+          x[1] = coord[1] + h*j+ h/2.0;
+          x[0] = coord[0] + h*i+ h/2.0;
+	  Hz[i + (j + k*nym)*nxm] = sol_obj.get_Hz_solution(x, Htime);
+	}
+      }
+    }
+
+  #if USE_OPENMP
+  }
+  #endif
+
+  t2 = MPI_Wtime();
+  load_init_conds_t += t2-t1;
+}
+
+
+/*******************************************************************************
+                Function to calculate norm (squared)
+*******************************************************************************/
+double yee_updater::calc_norm()
+{
+  int nxm, nym, nzm;
+  double norm = 0.0, temp = 0.0;
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+
+  double t1, t2;
+  int i, j, k;
+  t1 = MPI_Wtime();
+
+  #if USE_OPENMP
+  #pragma omp parallel default(shared) private(i,j,k)
+  {
+  #endif
+
+    // load Ex values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nz; k+=skip) {
+      for (j=0; j<ny; j+=skip) {
+	for (i=0; i<nxm; i+=skip) {
+          temp += Ex[i + (j + k*ny)*nxm] * Ex[i + (j + k*ny)*nxm];
+	}
+      }
+    }
+
+    // load Ey values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nz; k+=skip) {
+      for (j=0; j<nym; j+=skip) {
+        for (i=0; i<nx; i+=skip) {
+          temp += Ey[i + (j + k*nym)*nx] * Ey[i + (j + k*nym)*nx];
+        }
+      }
+    }
+
+    // load Ez values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nzm; k+=skip) {
+      for (j=0; j<ny; j+=skip) {
+        for (i=0; i<nx; i+=skip) {
+          temp += Ez[i + (j + k*ny)*nx] * Ez[i + (j + k*ny)*nx];
+        }
+      }
+    }
+
+    #if USE_OPENMP
+    #pragma omp barrier
+    #pragma omp single
+    #endif
+    norm = eps*temp;
+
+    temp = 0.0;
+    #if USE_OPENMP
+    #pragma omp barrier
+    #endif
+
+    // load Hx values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nzm; k+=skip) {
+      for (j=0; j<nym; j+=skip) {
+        for (i=0; i<nx; i+=skip) {
+          temp += Hx[i + (j + k*nym)*nx] * Hx[i + (j + k*nym)*nx];
+        }
+      }
+    }
+
+    // load Hy values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nzm; k+=skip) {
+      for (j=0; j<ny; j+=skip) {
+        for (i=0; i<nxm; i+=skip) {
+          temp += Hy[i + (j + k*ny)*nxm] * Hy[i + (j + k*ny)*nxm];
+        }
+      }
+    }
+
+    // load Hz values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nz; k+=skip) {
+      for (j=0; j<nym; j+=skip) {
+        for (i=0; i<nxm; i+=skip) {
+          temp += Hz[i + (j + k*nym)*nxm] * Hz[i + (j + k*nym)*nxm];
+	}
+      }
+    }
+
+  #if USE_OPENMP
+  }
+  #endif  
+  
+  norm += temp*mu;
+
+  t2 = MPI_Wtime();
+  calc_norm_t += t2-t1;
+
+  return norm;
+}
+
+/*******************************************************************************
+                Function to calculate error (squared)
+*******************************************************************************/
+double yee_updater::calc_error()
+{
+  int nxm, nym, nzm;
+  double error = 0.0, temp = 0.0, sol, x[3];
+  nxm = nx-1;
+  nym = ny-1;
+  nzm = nz-1;
+
+  double t1, t2;
+  int i, j, k;
+  t1 = MPI_Wtime();
+
+  // set the solution routine to use the exact expression for the curl
+  sol_obj.set_derivative_method(maxwell_solutions::EXACT);
+
+  #if USE_OPENMP
+  #pragma omp parallel default(shared) private(i,j,k,x,sol,upd_obj)
+  {
+  #endif
+
+    // load Ex values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nz; k+=skip) {
+      for (j=0; j<ny; j+=skip) {
+	for (i=0; i<nxm; i+=skip) {
+          x[2] = coord[2] + h*k;
+          x[1] = coord[1] + h*j;
+	  x[0] = coord[0] + h*i + h/2.0;
+          sol = sol_obj.get_Ex_solution(x, Etime) - Ex[i + (j + k*ny)*nxm];
+          temp +=  sol * sol;
+	}
+      }
+    }
+
+    // load Ey values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nz; k+=skip) {
+      for (j=0; j<nym; j+=skip) {
+        for (i=0; i<nx; i+=skip) {
+          x[2] = coord[2] + h*k;
+          x[1] = coord[1] + h*j + h/2.0;
+	  x[0] = coord[0] + h*i;
+          sol = sol_obj.get_Ey_solution(x, Etime) - Ey[i + (j + k*nym)*nx];
+          temp += sol * sol;
+        }
+      }
+    }
+
+    // load Ez values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nzm; k+=skip) {
+      for (j=0; j<ny; j+=skip) {
+        for (i=0; i<nx; i+=skip) {
+          x[2] = coord[2] + h*k + h/2.0;
+          x[1] = coord[1] + h*j;
+	  x[0] = coord[0] + h*i;
+          sol = sol_obj.get_Ez_solution(x, Etime) - Ez[i + (j + k*ny)*nx];
+          temp += sol * sol;
+        }
+      }
+    }
+
+    #if USE_OPENMP
+    #pragma omp barrier
+    #pragma omp single
+    #endif
+    error = eps*temp;
+
+    temp = 0.0;
+    #if USE_OPENMP
+    #pragma omp barrier
+    #endif
+
+    // load Hx values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nzm; k+=skip) {
+      for (j=0; j<nym; j+=skip) {
+        for (i=0; i<nx; i+=skip) {
+          x[2] = coord[2] + h*k + h/2.0;
+          x[1] = coord[1] + h*j + h/2.0;
+	  x[0] = coord[0] + h*i;
+          sol = sol_obj.get_Hx_solution(x, Htime) - Hx[i + (j + k*nym)*nx];
+          temp += sol * sol;
+        }
+      }
+    }
+
+    // load Hy values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nzm; k+=skip) {
+      for (j=0; j<ny; j+=skip) {
+        for (i=0; i<nxm; i+=skip) {
+          x[2] = coord[2] + h*k + h/2.0;
+          x[1] = coord[1] + h*j;
+	  x[0] = coord[0] + h*i + h/2.0;
+          sol = sol_obj.get_Hy_solution(x, Htime) - Hy[i + (j + k*ny)*nxm];
+          temp += sol * sol;
+        }
+      }
+    }
+
+    // load Hz values
+    #if USE_OPENMP
+    #pragma omp for reduction(+:temp) collapse(3)
+    #endif
+    for (k=0; k<nz; k+=skip) {
+      for (j=0; j<nym; j+=skip) {
+        for (i=0; i<nxm; i+=skip) {
+          x[2] = coord[2] + h*k;
+          x[1] = coord[1] + h*j + h/2.0;
+	  x[0] = coord[0] + h*i + h/2.0;
+          sol = sol_obj.get_Hz_solution(x, Htime) - Hz[i + (j + k*nym)*nxm];
+          temp += sol * sol;
+	}
+      }
+    }
+
+  #if USE_OPENMP
+  }
+  #endif  
+  
+  error += temp*mu;
+
+  t2 = MPI_Wtime();
+  calc_err_t += t2-t1;
+
+  return error;
+}
+
 
