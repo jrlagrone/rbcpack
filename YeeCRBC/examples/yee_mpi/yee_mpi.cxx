@@ -1738,7 +1738,7 @@ void yee_updater::calc_DAB_send_params()
 
     // figure out which sides need to send in the current direction
     // start by listing the tangential sides
-    switch (send_dirs[l] % 2) {
+    switch (send_dirs[l] / 2) {
 
       case 0: // outward normal is +/-x
         tang_sides[0] = 2; // left y
@@ -1757,6 +1757,11 @@ void yee_updater::calc_DAB_send_params()
         tang_sides[1] = 1; // right x
         tang_sides[2] = 2; // left y
         tang_sides[3] = 3; // left z
+        break;
+      default: // shouldn't happen
+        for (m=0; m<4; ++m)
+          tang_sides[m] = -1;
+        std::cerr << "invalid side" << std::endl;
         break;
     }
 
@@ -1805,7 +1810,8 @@ void yee_updater::send_DAB()
   // as an array instead of individually for each component. We hope this 
   // presentation is slightly clearer.
 
-  unsigned int l,m, side, edge, sidea;
+  unsigned int l,m, side, sidea;
+  int edge;
   int low[3], high[3], plow[2], phigh[2];
   double t1, t2;
 
@@ -1889,13 +1895,13 @@ void yee_updater::send_DAB()
         get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, sidea, low, high, plow, phigh);
 
       } // end loop over sides in the current direction
-
       // now send any edge data
       if (send_sides[l].size() == 2) {
 
         // Ex
         // get edge index
         edge = bound_upd_Ex.get_edge_index(send_sides[l][0], send_sides[l][1]);
+
         // get edge data extents
         bound_upd_Ex.get_edge_extents(edge, low, high, plow, phigh);
 
@@ -1904,16 +1910,18 @@ void yee_updater::send_DAB()
         // extents we need to modify and side % 2 tells us if we need to modify
         // the low or high extents
         if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
+        high[side / 2] = ++low[side / 2];
         } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
+        low[side / 2] = --high[side / 2];       
         }
+
         // the true at the end tells the function plow, phigh are arrays of len 2
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, sidea, low, high, plow, phigh, true);
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, edge, low, high, plow, phigh, true);
 
         // Ey
         // get edge index
         edge = bound_upd_Ey.get_edge_index(send_sides[l][0], send_sides[l][1]);
+
         // get edge data extents
         bound_upd_Ey.get_edge_extents(edge, low, high, plow, phigh);
 
@@ -1927,11 +1935,12 @@ void yee_updater::send_DAB()
           low[side / 2] = --high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, sidea, low, high, plow, phigh, true);
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, edge, low, high, plow, phigh, true);
 
         // Ez
         // get edge index
         edge = bound_upd_Ez.get_edge_index(send_sides[l][0], send_sides[l][1]);
+
         // get edge data extents
         bound_upd_Ez.get_edge_extents(edge, low, high, plow, phigh);
 
@@ -1945,7 +1954,7 @@ void yee_updater::send_DAB()
           low[side / 2] = --high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, sidea, low, high, plow, phigh, true);
+        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, edge, low, high, plow, phigh, true);
 
       } // end if 2 sides
 
@@ -2030,14 +2039,14 @@ void yee_updater::recv_DAB()
         // parallel to the phyiscal boundary
         bound_upd_Ex.get_output_extents(sidea, low, high);
 
-        // now we need to restrict to second to last line of points parallel to 
+        // now we need to restrict to  last line of points parallel to 
         // the boundary we are sending. side / 2 gives us the component of the
         // extents we need to modify and side % 2 tells us if we need to modify
         // the low or high extents
         if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
+          high[side / 2] = low[side / 2];
         } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
+          low[side / 2] = high[side / 2];       
         }
 
         // copy data auxilliary data into the send buffer
@@ -2050,14 +2059,14 @@ void yee_updater::recv_DAB()
         // parallel to the phyiscal boundary
         bound_upd_Ey.get_output_extents(sidea, low, high);
 
-        // now we need to restrict to second to last line of points parallel to 
+        // now we need to restrict to last line of points parallel to 
         // the boundary we are sending. side / 2 gives us the component of the
         // extents we need to modify and side % 2 tells us if we need to modify
         // the low or high extents
         if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
+          high[side / 2] = low[side / 2];
         } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
+          low[side / 2] = high[side / 2];       
         }
 
         // copy data auxilliary data into the send buffer
@@ -2070,14 +2079,14 @@ void yee_updater::recv_DAB()
         // parallel to the phyiscal boundary
         bound_upd_Ez.get_output_extents(sidea, low, high);
 
-        // now we need to restrict to second to last line of points parallel to 
+        // now we need to restrict to last line of points parallel to 
         // the boundary we are sending. side / 2 gives us the component of the
         // extents we need to modify and side % 2 tells us if we need to modify
         // the low or high extents
         if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
+          high[side / 2] = low[side / 2];
         } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
+          low[side / 2] = high[side / 2];       
         }
 
         // copy data auxilliary data into the send buffer
@@ -2087,7 +2096,7 @@ void yee_updater::recv_DAB()
 
       } // end loop over sides in the current direction
 
-      // now send any edge data
+      // now receive any edge data
       if (send_sides[l].size() == 2) {
 
         // Ex
@@ -2096,17 +2105,17 @@ void yee_updater::recv_DAB()
         // get edge data extents
         bound_upd_Ex.get_edge_extents(edge, low, high, plow, phigh);
 
-        // now we need to restrict to second to last point parallel to 
+        // now we need to restrict to last point parallel to 
         // the boundaries we are sending. side / 2 gives us the component of the
         // extents we need to modify and side % 2 tells us if we need to modify
         // the low or high extents
         if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
+          high[side / 2] = low[side / 2];
         } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
+          low[side / 2] = high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, count, sidea, low, high, plow, phigh, true);
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, count, edge, low, high, plow, phigh, true);
 
         // Ey
         // get edge index
@@ -2114,17 +2123,17 @@ void yee_updater::recv_DAB()
         // get edge data extents
         bound_upd_Ey.get_edge_extents(edge, low, high, plow, phigh);
 
-        // now we need to restrict to second to last point parallel to 
+        // now we need to restrict to last point parallel to 
         // the boundaries we are sending. side / 2 gives us the component of the
         // extents we need to modify and side % 2 tells us if we need to modify
         // the low or high extents
         if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
+          high[side / 2] = low[side / 2];
         } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
+          low[side / 2] = high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, count, sidea, low, high, plow, phigh, true);
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, count, edge, low, high, plow, phigh, true);
 
         // Ez
         // get edge index
@@ -2132,17 +2141,17 @@ void yee_updater::recv_DAB()
         // get edge data extents
         bound_upd_Ez.get_edge_extents(edge, low, high, plow, phigh);
 
-        // now we need to restrict to second to last point parallel to 
+        // now we need to restrict to last point parallel to 
         // the boundaries we are sending. side / 2 gives us the component of the
         // extents we need to modify and side % 2 tells us if we need to modify
         // the low or high extents
         if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
+          high[side / 2] = low[side / 2];
         } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
+          low[side / 2] = high[side / 2];       
         }
         // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, count, sidea, low, high, plow, phigh, true);
+        set_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, count, edge, low, high, plow, phigh, true);
 
       } // end if 2 sides
 
