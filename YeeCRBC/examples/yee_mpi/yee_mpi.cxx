@@ -98,7 +98,7 @@ void yee_updater::writeExField(int id) {
     for (k=0; k < nz; ++k) 
       for (j=0; j < ny; ++j)
 	for (i=0; i < nx-1; ++i)
-	  fprintf(f, "%f\n", Ex[i + (j + k*ny)*(nx-1)]);
+	  fprintf(f, "%f\n", E[0][i + (j + k*ny)*(nx-1)]);
   	
 
     // close the file
@@ -275,6 +275,65 @@ void yee_updater::run()
     glob_norm = std::sqrt(glob_norm);
   }
 
+  for (int l = 0; l<8; ++l) {
+    if ((my_id == l)) {
+
+      std::cout << "my_id = " << my_id << std::endl;
+      std::cout << "  Ex :" << std::endl;
+      std::cout << "    coord (" << coord[0] + h/2.0 << ", " << coord[0] + (nx -1.5)*h << ")"
+                << " x (" << coord[1] << ", " << coord[1] + (ny-1)*h << ")" 
+                << " x (" << coord[2] << ", " << coord[2] + (nz-1)*h << ")" << std::endl;
+
+     std::cout << "  Ey :" << std::endl;
+      std::cout << "    coord (" << coord[0] << ", " << coord[0] + (nx-1)*h << ")"
+                << " x (" << coord[1] + h/2.0<< ", " << coord[1] + (ny -1.5)*h << ")" 
+                << " x (" << coord[2] << ", " << coord[2] + (nz-1)*h << ")" << std::endl;
+
+     std::cout << "  Ez :" << std::endl;
+      std::cout << "    coord (" << coord[0] << ", " << coord[0] + (nx-1)*h << ")"
+                << " x (" << coord[1] << ", " << coord[1] + (ny-1)*h << ")" 
+                << " x (" << coord[2] + h/2.0<< ", " << coord[2] + (nz -1.5)*h << ")" << std::endl;
+
+     int high[3], low[3]; 
+
+     for (int i=0; i<6; ++i) {
+       if (procBounds[i] != crbc::BoundaryProperties::CRBC)
+         continue;
+       bound_upd[0].get_input_extents(i, low, high);
+
+       std::cout << "    side = " << i << " Ex DAB coord (" << coord[0] + (low[0] + 0.5)*h << ", " << coord[0] + (high[0] + 0.5)*h << ")"
+                << " x (" << coord[1] + low[1]*h << ", " << coord[1] + high[1]*h << ")" 
+                << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
+
+     }
+
+     for (int i=0; i<6; ++i) {
+       if (procBounds[i] != crbc::BoundaryProperties::CRBC)
+         continue;
+       bound_upd[1].get_input_extents(i, low, high);
+
+       std::cout << "    side = " << i << " Ey DAB coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
+              << " x (" << coord[1] + (low[1]+ 0.5)*h << ", " << coord[1] + (high[1]+ 0.5)*h << ")" 
+              << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
+
+     }
+
+     for (int i=0; i<6; ++i) {
+       if (procBounds[i] != crbc::BoundaryProperties::CRBC)
+         continue;
+       bound_upd[2].get_input_extents(i, low, high);
+
+       std::cout << "    side = " << i << " Ez DAB coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
+                << " x (" << coord[1] + low[1]*h << ", " << coord[1] + high[1]*h << ")" 
+                << " x (" << coord[2] + (low[2]+ 0.5)*h<< ", " << coord[2] + (high[2]+ 0.5)*h << ")" << std::endl;
+
+     }
+    }
+
+    MPI_Barrier(grid_comm);
+
+  }
+
   // time step
   if (grid_comm != MPI_COMM_NULL) {
 
@@ -384,8 +443,8 @@ void yee_updater::print_mem_use() const
     double tot_mem_use, dab_buff, ebuff, fields;
 
     // calculate the size of the field vectors in MB
-    fields = sizeof(double)*(Ex.capacity() + Ey.capacity() + Ez.capacity() + 
-          Hx.capacity() + Hy.capacity() + Hz.capacity()) / ((double) 1024*1024);
+    fields = sizeof(double)*(E[0].capacity() + E[1].capacity() + E[2].capacity() + 
+          H[0].capacity() + H[1].capacity() + H[2].capacity()) / ((double) 1024*1024);
 
     // calculate the size of the E send/recieve buffers
     ebuff = 0;    
@@ -727,12 +786,8 @@ void yee_updater::create_mpi_comm(MPI_Comm comm) {
   }
 
   // figure out neighboring processes
-  NORTH = MPI_PROC_NULL;
-  EAST = MPI_PROC_NULL;
-  SOUTH = MPI_PROC_NULL;
-  WEST = MPI_PROC_NULL;
-  UP = MPI_PROC_NULL;
-  DOWN = MPI_PROC_NULL;
+  for (int i=0; i<6; ++i)
+    MPI_DIR[i] = MPI_PROC_NULL;
 
   cart_rank[0] = -1;
   cart_rank[1] = -1;
@@ -745,13 +800,13 @@ void yee_updater::create_mpi_comm(MPI_Comm comm) {
       std::cerr << "MPI_Cart_coords failed" << std::endl;
 
     // figure the ids of the processes we might need to send data to
-    if (MPI_Cart_shift(grid_comm, 2, -1, &UP, &DOWN) != MPI_SUCCESS)
+    if (MPI_Cart_shift(grid_comm, 2, -1, &MPI_DIR[5], &MPI_DIR[4]) != MPI_SUCCESS)
       std::cerr << "MPI_Cart_shift failed" << std::endl;
 
-    if (MPI_Cart_shift(grid_comm, 1, -1, &NORTH, &SOUTH) != MPI_SUCCESS)
+    if (MPI_Cart_shift(grid_comm, 1, -1, &MPI_DIR[3], &MPI_DIR[2]) != MPI_SUCCESS)
       std::cerr << "MPI_Cart_shift failed" << std::endl;
 
-    if (MPI_Cart_shift(grid_comm, 0, -1, &EAST, &WEST) != MPI_SUCCESS)
+    if (MPI_Cart_shift(grid_comm, 0, -1, &MPI_DIR[1], &MPI_DIR[0]) != MPI_SUCCESS)
       std::cerr << "MPI_Cart_shift failed" << std::endl;
 
   }
@@ -760,35 +815,20 @@ void yee_updater::create_mpi_comm(MPI_Comm comm) {
   isBoundaryProc = false;
 
   // if a process doesn't have a neighbor on at least 1 side, its on the boundary
-  if ((grid_comm != MPI_COMM_NULL) && ((NORTH == MPI_PROC_NULL) || 
-       (EAST == MPI_PROC_NULL) || (SOUTH == MPI_PROC_NULL) || 
-       (WEST == MPI_PROC_NULL) || (UP == MPI_PROC_NULL) || 
-       (DOWN == MPI_PROC_NULL)))
+  if ((grid_comm != MPI_COMM_NULL) && ((MPI_DIR[0] == MPI_PROC_NULL) || 
+       (MPI_DIR[1] == MPI_PROC_NULL) || (MPI_DIR[2] == MPI_PROC_NULL) || 
+       (MPI_DIR[3] == MPI_PROC_NULL) || (MPI_DIR[4] == MPI_PROC_NULL) || 
+       (MPI_DIR[5] == MPI_PROC_NULL)))
     isBoundaryProc = true;
 
   // label the boundaries. Use type NONE for interior sides and CRBC for the
   // exterior boundaries. To do a wave guide, e.g., one might change the type
   // to PEC on the appropriate sides
-  for (int i=0; i<6; ++i)
+  for (int i=0; i<6; ++i) {
     procBounds[i] = crbc::BoundaryProperties::NONE;
-
-  if ((grid_comm != MPI_COMM_NULL) && (UP == MPI_PROC_NULL))
-    procBounds[5] = crbc::BoundaryProperties::CRBC;
-   
-  if ((grid_comm != MPI_COMM_NULL) && (DOWN == MPI_PROC_NULL))
-    procBounds[4] = crbc::BoundaryProperties::CRBC;
-
-  if ((grid_comm != MPI_COMM_NULL) && (NORTH == MPI_PROC_NULL))
-    procBounds[3] = crbc::BoundaryProperties::CRBC;
-
-  if ((grid_comm != MPI_COMM_NULL) && (SOUTH == MPI_PROC_NULL))
-    procBounds[2] = crbc::BoundaryProperties::CRBC;
-
-  if ((grid_comm != MPI_COMM_NULL) && (EAST == MPI_PROC_NULL))
-    procBounds[1] = crbc::BoundaryProperties::CRBC;
-
-  if ((grid_comm != MPI_COMM_NULL) && (WEST == MPI_PROC_NULL))
-    procBounds[0] = crbc::BoundaryProperties::CRBC;
+    if ((grid_comm != MPI_COMM_NULL) && (MPI_DIR[i] == MPI_PROC_NULL))
+      procBounds[i] = crbc::BoundaryProperties::CRBC;
+  }
 
   // stop timer
   t2 = MPI_Wtime();
@@ -841,12 +881,12 @@ void yee_updater::allocate_memory()
     std::cerr << "MPI_Allreduce failed";
 
   // allocate Fields and initialize to 0
-  Ex.assign((nx-1)*ny*nz, 0.0);
-  Ey.assign(nx*(ny-1)*nz, 0.0);
-  Ez.assign(nx*ny*(nz-1), 0.0);
-  Hx.assign(nx*(ny-1)*(nz-1), 0.0);
-  Hy.assign((nx-1)*ny*(nz-1), 0.0);
-  Hz.assign((nx-1)*(ny-1)*nz, 0.0);
+  E[0].assign((nx-1)*ny*nz, 0.0);     // Ex
+  E[1].assign(nx*(ny-1)*nz, 0.0);     // Ey
+  E[2].assign(nx*ny*(nz-1), 0.0);     // Ez
+  H[0].assign(nx*(ny-1)*(nz-1), 0.0); // Hx
+  H[1].assign((nx-1)*ny*(nz-1), 0.0); // Hy
+  H[2].assign((nx-1)*(ny-1)*nz, 0.0); // Hz
 
   // compute update coefficients
   Hcoef = (dt/mu)/h;
@@ -907,27 +947,48 @@ void yee_updater::init_DAB()
     // indexing (and by default doubles for coeficients) and provide the run
     // time, grid spacing, time step size, wave speed, and boundary configuration
     // on each boundary process
-    bound_upd_Ex = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
-    bound_upd_Ey = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
-    bound_upd_Ez = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
+    bound_upd[0] = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
+    bound_upd[1] = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
+    bound_upd[2] = crbc::CrbcUpdates<3, double, int> (CRBC_T, htmp, dt, c, procBounds);
 
     // loop over and set up each of the possible boundary sides
     //
-    // We are dealing with the MPI by overlapping the DAB layer for tangential
-    // components, the grids are overlapped by a factor of h so neighboring
-    // processes share 2 physical points. The same thing is done for the normal
-    // component, but it looks slightly different because of the staggered grid.
-    // While they both overlap by a factor of h to share 2 grid points, in the 
-    // Yee scheme it is 1 cell for tangential components and 2 cells for normal
-    // components.
+    // We are dealing with the MPI by overlapping the DAB layer for "simplicity"
+    // We recall that we over lapped the Yee grid so we an overlap of 2 grid
+    // points for tangential components, so the grid looks like
     //
     // Tangential components            Normal Components
     //   ---------                      ---x-----x-----x--- 
     //   x   x   x                      |     |     |     |
     //   ---------                      ---x-----x-----x---
-    //       ---------                        ---x-----x-----x---
-    //       x   x   x                        |     |     |     |
-    //       ---------                        ---x-----x-----x---
+    //       ---------                              ---x-----x-----x---
+    //       x   x   x                              |     |     |     |
+    //       ---------                              ---x-----x-----x---
+    //
+    // We note that if we use the same 2 point overlap, we will need to pass
+    // data left/right, up/down, and diagonally. Visually, this looks like
+    //
+    //            |   |            
+    //         o  o   o  o      Here, the process boundaries are represented
+    //            |   |         by -- or |. Grid points are represented by o, x
+    //       --x--o   x--o--
+    //       
+    //       --o--o   o--o--
+    //            |   |     
+    //         x  o   x  o
+    //            |   | 
+    //
+    // In this case we highlight that the last grid point that can be updated
+    // by the process on the lower left is designated by 'x'. The 'x' on the 
+    // other 3 processes are the locations we need to send the data to. Notice
+    // that this is not the same as the Yee updates because we are using the 
+    // 7-point wave equation stencil here. 
+    //
+    // Instead, we overlap by 3 points. We do this to avoid passing data
+    // diagonally, which should simplify the code somewhat. We note, however,
+    // that we would only need to send the auxilliary variables at 1 point
+    // diagonally, so adding more work due to the overlap to avoid message
+    // passing may not be the most efficient use of resources.
     //
     // Note that the use of normal and tangential components here is somewhat
     // confusing because it is in reference to the boundaries with neighboring
@@ -960,7 +1021,7 @@ void yee_updater::init_DAB()
     // [nx-2, nx-1] x [0, ny-2] x [0, nz-1], but this does not overlap the grids
     // by 2 points. To correct this, we tell the DAB layer that the extents are
     // greater than the actual data range by subtracting 1 from the lower y
-    // extent if their is a neighboring process in the DOWN direction to get
+    // extent if their is a neighboring process in the MPI_DIR[4] direction to get
     // [nx-2, nx-1] x [-1, ny-2] x [0, nz-1]
     // 
     // NOTE: the DAB updater considers the extents to be inclusive
@@ -984,113 +1045,116 @@ void yee_updater::init_DAB()
 	  high[2] = nz - 1; 
 
 	  if (l == 0) { 
-	    // left boundary in x, need [0,1] in x, all in y, z
-	    high[0] = 1;
+            // left boundary in x, need [0,1] in x, all in y, z
+            high[0] = 1;
 
-	    // adjust based on field component
-	    if (m == 1) { // Ey
-	      high[1]--;
-	      if (SOUTH != MPI_PROC_NULL)
-		low[1]--;
-	    } else if (m == 2) { // Ez
-              high[2]--;
-	      if (DOWN != MPI_PROC_NULL)
-		low[2]--;
-	    }
+            // adjust based on field component
+            if (m == 1) { // Ey
+              if (MPI_DIR[3] == MPI_PROC_NULL)
+                high[1]--;
+              if (MPI_DIR[2] != MPI_PROC_NULL)
+                low[1]--;
+            } else if (m == 2) { // Ez
+              if (MPI_DIR[5] == MPI_PROC_NULL)
+                high[2]--;
+              if (MPI_DIR[4] != MPI_PROC_NULL)
+                low[2]--;
+            }
               
-	  } else if (l == 1) { 
-	    // right boundary in x, need [nx-2, nx-1] in x, all y, z for 
-            // tangential and [nx-3, nx-2] in x, all y, z for normal
-	    low[0] = nx-2;
+          } else if (l == 1) { 
+            // right boundary in x, need [nx-2, nx-1] in x, all y, z
+            low[0] = nx-2;
     
-	    // adjust based on field component
-	    if (m == 0) {
-	      high[0]--;
-	      low[0]--;
-	    } else if (m == 1) { // Ey
-	      high[1]--;
-	      if (SOUTH != MPI_PROC_NULL)
-		low[1]--;
-	    } else if (m == 2) { // Ez
-	      high[2]--;
-	      if (DOWN != MPI_PROC_NULL)
-		low[2]--;
-	    } 
+            // adjust based on field component
+            if (m == 0) {
+              high[0]--;
+              low[0]--;
+            } else if (m == 1) { // Ey
+              if (MPI_DIR[3] == MPI_PROC_NULL)
+                high[1]--;
+              if (MPI_DIR[2] != MPI_PROC_NULL)
+                low[1]--;
+            } else if (m == 2) { // Ez
+              if (MPI_DIR[5] == MPI_PROC_NULL)
+                high[2]--;
+              if (MPI_DIR[4] != MPI_PROC_NULL)
+                low[2]--;
+            } 
 
-	  } else if (l == 2) {               
-	    // left boundary in y, need [0,1] in y, all in x, z
-	    high[1] = 1;
+          } else if (l == 2) {               
+            // left boundary in y, need [0,1] in y, all in x, z
+            high[1] = 1;
 
-	    // adjust based on field component
-	    if (m == 0) { // Ex
-	      high[0]--;
-	      if (WEST != MPI_PROC_NULL)
-		low[0]--;
-	    } else if (m == 2) { // Ez
-	      high[2]--;
-	      if (DOWN != MPI_PROC_NULL)
-		low[2]--;
-	    }
-	  } else if (l == 3) {
-	    // right boundary in y, need [ny-2, ny-1] in y, all x, z for 
-            // tangential and [ny-3, ny-2] in y, all x, z
-	    low[1] = ny-2;
-    
-	    // adjust based on field component
-	    if (m == 1) {
-	      high[1]--;
-	      low[1]--;
-	    } else if (m == 0) { // Ex
-	      high[0]--;
-	      if (WEST != MPI_PROC_NULL)
-		low[0]--;
-	    } else if (m == 2) { // Ez
-	      high[2]--;
-	      if (DOWN != MPI_PROC_NULL)
-		low[2]--;
-	    } 
-	  } else if (l == 4) {               
-	    // left boundary in z, need [0,1] in z, all in x, y
-	    high[2] = 1;
+            // adjust based on field component
+            if (m == 0) { // Ex
+              if (MPI_DIR[1] == MPI_PROC_NULL)
+                high[0]--;
+              if (MPI_DIR[0] != MPI_PROC_NULL)
+                low[0]--;
+            } else if (m == 2) { // Ez
+              if (MPI_DIR[5] == MPI_PROC_NULL)
+                high[2]--;
+              if (MPI_DIR[4] != MPI_PROC_NULL)
+                low[2]--;
+            }
+          } else if (l == 3) {
+            // right boundary in y, need [ny-2, ny-1] in y, all x, z
+            low[1] = ny-2;
+  
+            // adjust based on field component
+            if (m == 1) {
+              high[1]--;
+              low[1]--;
+            } else if (m == 0) { // Ex
+              if (MPI_DIR[1] == MPI_PROC_NULL)
+                high[0]--;
+              if (MPI_DIR[0] != MPI_PROC_NULL)
+                low[0]--;
+            } else if (m == 2) { // Ez
+              if (MPI_DIR[5] == MPI_PROC_NULL)
+                high[2]--;
+              if (MPI_DIR[4] != MPI_PROC_NULL)
+                low[2]--;
+            } 
+          } else if (l == 4) {               
+            // left boundary in z, need [0,1] in z, all in x, y
+            high[2] = 1;
 
-	    // adjust based on field component
-	    if (m == 0) { // Ex
-	      high[0]--;
-	      if (WEST != MPI_PROC_NULL)
-		low[0]--;
-	    } else if (m == 1) { // Ey
-	      high[1]--;
-	      if (SOUTH != MPI_PROC_NULL)
-		low[1]--;
-	    }
-	  } else if (l == 5) {
-	    // right boundary in z, need [nz-2, nz-1] in z, all x, y for 
-            // tangential and [nz-3, nz-2] in z, all x, y for normal
-	    low[2] = nz-2;
-    
-	    // adjust based on field component
-	    if (m == 2) {
-	      high[2]--;
-	      low[2]--;
-	    } else if (m == 0) { // Ex
-	      high[0]--;
-	      if (WEST != MPI_PROC_NULL)
-		low[0]--;
-	    } else if (m == 1) { // Ey
-	      high[1]--;
-	      if (SOUTH != MPI_PROC_NULL)
-		low[1]--;
-	    } 
-	  }
+            // adjust based on field component
+            if (m == 0) { // Ex
+              if (MPI_DIR[1] == MPI_PROC_NULL)
+                high[0]--;
+              if (MPI_DIR[0] != MPI_PROC_NULL)
+                low[0]--;
+            } else if (m == 1) { // Ey
+              if (MPI_DIR[3] == MPI_PROC_NULL)
+                high[1]--;
+              if (MPI_DIR[2] != MPI_PROC_NULL)
+                low[1]--;
+            }
+          } else if (l == 5) {
+            // right boundary in z, need [nz-2, nz-1] in z, all x, y
+            low[2] = nz-2;
+  
+            // adjust based on field component
+            if (m == 2) {
+              high[2]--;
+              low[2]--;
+            } else if (m == 0) { // Ex
+              if (MPI_DIR[1] == MPI_PROC_NULL)
+                high[0]--;
+              if (MPI_DIR[0] != MPI_PROC_NULL)
+                low[0]--;
+            } else if (m == 1) { // Ey
+              if (MPI_DIR[3] == MPI_PROC_NULL)
+                high[1]--;
+              if (MPI_DIR[2] != MPI_PROC_NULL)
+                low[1]--;
+            } 
+          }
 
 	  // call initializer and limit the number of recursions to at most 20
-	  if (m == 0) {
-	    bound_upd_Ex.init_face(l, low, high, delta, 20, tol);
-	  } else if (m == 1) {
-	    bound_upd_Ey.init_face(l, low, high, delta, 20, tol);
-	  } else {
-	    bound_upd_Ez.init_face(l, low, high, delta, 20, tol);
-	  }
+          bound_upd[m].init_face(l, low, high, delta, 20, tol);
 
 	} // end loop over components
       }
@@ -1098,28 +1162,28 @@ void yee_updater::init_DAB()
 
     // now get some properties from the updaters that we may be interested in
     // at a later time
-    dab_mem_use = bound_upd_Ex.get_mem_usage() + bound_upd_Ey.get_mem_usage() \
-                + bound_upd_Ez.get_mem_usage();
+    dab_mem_use = bound_upd[0].get_mem_usage() + bound_upd[1].get_mem_usage() \
+                + bound_upd[2].get_mem_usage();
 
     // get number of recursions and reflection coefficients
     for (l = 0; l<6; ++l) {
       if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
-	DAB_props.at(l) = bound_upd_Ex.get_num_recursions(l);
-	DAB_refl.at(l) = bound_upd_Ex.get_reflection_coef(l);
+	DAB_props.at(l) = bound_upd[0].get_num_recursions(l);
+	DAB_refl.at(l) = bound_upd[0].get_reflection_coef(l);
       }
     }
     DAB_refl[9] = dab_mem_use;
 
     // get info about the domain configuration 
-    DAB_props.at(6) = bound_upd_Ex.get_num_faces();
-    DAB_props.at(7) = bound_upd_Ex.get_num_edges();
-    DAB_props.at(8) = bound_upd_Ex.get_num_corners();
-    DAB_props.at(9) = bound_upd_Ey.get_num_faces();
-    DAB_props.at(10) = bound_upd_Ey.get_num_edges();
-    DAB_props.at(11) = bound_upd_Ey.get_num_corners();
-    DAB_props.at(12) = bound_upd_Ez.get_num_faces();
-    DAB_props.at(13) = bound_upd_Ez.get_num_edges();
-    DAB_props.at(14) = bound_upd_Ez.get_num_corners();
+    DAB_props.at(6) = bound_upd[0].get_num_faces();
+    DAB_props.at(7) = bound_upd[0].get_num_edges();
+    DAB_props.at(8) = bound_upd[0].get_num_corners();
+    DAB_props.at(9) = bound_upd[1].get_num_faces();
+    DAB_props.at(10) = bound_upd[1].get_num_edges();
+    DAB_props.at(11) = bound_upd[1].get_num_corners();
+    DAB_props.at(12) = bound_upd[2].get_num_faces();
+    DAB_props.at(13) = bound_upd[2].get_num_edges();
+    DAB_props.at(14) = bound_upd[2].get_num_corners();
 
   }
 
@@ -1216,8 +1280,8 @@ void yee_updater::step_E()
     for (k=1; k < nzm; ++k) {
       for (j=1; j < nym; ++j) {
         for (i=0; i < nxm; ++i) {
-	  Ex[i + (j + k*ny)*nxm] += Ecoef * ((Hz[i + (j + k*nym)*nxm] - Hz[i + (j-1 + k*nym)*nxm]) \
-		- (Hy[i + (j + k*ny)*nxm] - Hy[i + (j + (k-1)*ny)*nxm]));
+	  E[0][i + (j + k*ny)*nxm] += Ecoef * ((H[2][i + (j + k*nym)*nxm] - H[2][i + (j-1 + k*nym)*nxm]) \
+		- (H[1][i + (j + k*ny)*nxm] - H[1][i + (j + (k-1)*ny)*nxm]));
         }
       }
     }
@@ -1229,8 +1293,8 @@ void yee_updater::step_E()
     for (k=1; k < nzm; ++k) {
       for (j=0; j < nym; ++j) {
         for (i=1; i < nxm; ++i) {
-	  Ey[i + (j + k*nym)*nx] += Ecoef * ((Hx[i + (j + k*nym)*nx] - Hx[i + (j + (k-1)*nym)*nx]) \
-		- (Hz[i + (j + k*nym)*nxm] - Hz[i-1 + (j + k*nym)*nxm]));
+	  E[1][i + (j + k*nym)*nx] += Ecoef * ((H[0][i + (j + k*nym)*nx] - H[0][i + (j + (k-1)*nym)*nx]) \
+		- (H[2][i + (j + k*nym)*nxm] - H[2][i-1 + (j + k*nym)*nxm]));
         }
       }
     }
@@ -1242,8 +1306,8 @@ void yee_updater::step_E()
     for (k=0; k < nzm; ++k) {
       for (j=1; j < nym; ++j) {
         for (i=1; i < nxm; ++i) {
-	  Ez[i + (j + k*ny)*nx] += Ecoef * ((Hy[i + (j + k*ny)*nxm] - Hy[i-1 + (j + k*ny)*nxm]) \
-		- (Hx[i + (j + k*nym)*nx] - Hx[i + (j-1 + k*nym)*nx]));
+	  E[2][i + (j + k*ny)*nx] += Ecoef * ((H[1][i + (j + k*ny)*nxm] - H[1][i-1 + (j + k*ny)*nxm]) \
+		- (H[0][i + (j + k*nym)*nx] - H[0][i + (j-1 + k*nym)*nx]));
         }
       }
     }
@@ -1284,8 +1348,8 @@ void yee_updater::step_inner_H()
     for (k=1; k < nzm-1; ++k) {
       for (j=1; j < nym-1; ++j) {
         for (i=1; i < nxm; ++i) {
-	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
-			- (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+	  H[0][i + (j + k*nym)*nx] += Hcoef * ((E[1][i + (j + (k+1)*nym)*nx] - E[1][i + (j + k*nym)*nx]) \
+			- (E[2][i + (j+1 + k*ny)*nx] - E[2][i + (j + k*ny)*nx]));
         }
       }
     }
@@ -1297,8 +1361,8 @@ void yee_updater::step_inner_H()
     for (k=1; k < nzm-1; ++k) {
       for (j=1; j < nym; ++j) {
         for (i=1; i < nxm-1; ++i) {
-	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
-			- (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+	  H[1][i + (j + k*ny)*nxm] += Hcoef * ((E[2][i+1 + (j + k*ny)*nx] - E[2][i + (j + k*ny)*nx]) \
+			- (E[0][i + (j + (k+1)*ny)*nxm] - E[0][i + (j + k*ny)*nxm]));
         }
       }
     }
@@ -1310,8 +1374,8 @@ void yee_updater::step_inner_H()
     for (k=1; k < nzm; ++k) {
       for (j=1; j < nym-1; ++j) {
         for (i=1; i < nxm-1; ++i) {
-	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
-			 - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+	  H[2][i + (j + k*nym)*nxm] += Hcoef * ((E[0][i + (j+1 + k*ny)*nxm] - E[0][i + (j + k*ny)*nxm]) \
+			 - (E[1][i+1 + (j + k*nym)*nx] - E[1][i + (j + k*nym)*nx]));
         }
       }
     }
@@ -1352,8 +1416,8 @@ void yee_updater::step_outer_H()
     for (k=0; k < nzm; ++k) {
       for (j=0; j < nym; ++j) {
         for (i=0; i < nx; i+=nxm) {
-	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
-			 - (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+	  H[0][i + (j + k*nym)*nx] += Hcoef * ((E[1][i + (j + (k+1)*nym)*nx] - E[1][i + (j + k*nym)*nx]) \
+			 - (E[2][i + (j+1 + k*ny)*nx] - E[2][i + (j + k*ny)*nx]));
         }
       }
     }
@@ -1364,8 +1428,8 @@ void yee_updater::step_outer_H()
     for (k=0; k < nzm; ++k) {
       for (j=0; j < nym; j+=nym-1) {
         for (i=1; i < nxm; ++i) {
-	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
-			- (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+	  H[0][i + (j + k*nym)*nx] += Hcoef * ((E[1][i + (j + (k+1)*nym)*nx] - E[1][i + (j + k*nym)*nx]) \
+			- (E[2][i + (j+1 + k*ny)*nx] - E[2][i + (j + k*ny)*nx]));
         }
       }
     }
@@ -1376,8 +1440,8 @@ void yee_updater::step_outer_H()
     for (k=0; k < nzm; k+=nzm-1) {
       for (j=1; j < nym-1; ++j) {
         for (i=1; i < nxm; ++i) {
-	  Hx[i + (j + k*nym)*nx] += Hcoef * ((Ey[i + (j + (k+1)*nym)*nx] - Ey[i + (j + k*nym)*nx]) \
-			- (Ez[i + (j+1 + k*ny)*nx] - Ez[i + (j + k*ny)*nx]));
+	  H[0][i + (j + k*nym)*nx] += Hcoef * ((E[1][i + (j + (k+1)*nym)*nx] - E[1][i + (j + k*nym)*nx]) \
+			- (E[2][i + (j+1 + k*ny)*nx] - E[2][i + (j + k*ny)*nx]));
         }
       }
     }
@@ -1389,8 +1453,8 @@ void yee_updater::step_outer_H()
     for (k=0; k < nzm; ++k) {
       for (j=0; j < ny; j+=nym) {
         for (i=0; i < nxm; ++i) {
-	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
-			 - (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+	  H[1][i + (j + k*ny)*nxm] += Hcoef * ((E[2][i+1 + (j + k*ny)*nx] - E[2][i + (j + k*ny)*nx]) \
+			 - (E[0][i + (j + (k+1)*ny)*nxm] - E[0][i + (j + k*ny)*nxm]));
         }
       }
     }
@@ -1401,8 +1465,8 @@ void yee_updater::step_outer_H()
     for (k=0; k < nzm; k+=nzm-1) {
       for (j=1; j < nym; ++j) {
         for (i=0; i < nxm; ++i) {
-	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
-			- (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+	  H[1][i + (j + k*ny)*nxm] += Hcoef * ((E[2][i+1 + (j + k*ny)*nx] - E[2][i + (j + k*ny)*nx]) \
+			- (E[0][i + (j + (k+1)*ny)*nxm] - E[0][i + (j + k*ny)*nxm]));
         }
       }
     }
@@ -1413,8 +1477,8 @@ void yee_updater::step_outer_H()
     for (k=1; k < nzm-1; ++k) {
       for (j=1; j < nym; ++j) {
         for (i=0; i < nxm; i+=nxm-1) {
-	  Hy[i + (j + k*ny)*nxm] += Hcoef * ((Ez[i+1 + (j + k*ny)*nx] - Ez[i + (j + k*ny)*nx]) \
-			 - (Ex[i + (j + (k+1)*ny)*nxm] - Ex[i + (j + k*ny)*nxm]));
+	  H[1][i + (j + k*ny)*nxm] += Hcoef * ((E[2][i+1 + (j + k*ny)*nx] - E[2][i + (j + k*ny)*nx]) \
+			 - (E[0][i + (j + (k+1)*ny)*nxm] - E[0][i + (j + k*ny)*nxm]));
         }
       }
     }
@@ -1426,8 +1490,8 @@ void yee_updater::step_outer_H()
     for (k=0; k < nz; k+=nzm) {
       for (j=0; j < nym; ++j) {
         for (i=0; i < nxm; ++i) {
-	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
-			 - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+	  H[2][i + (j + k*nym)*nxm] += Hcoef * ((E[0][i + (j+1 + k*ny)*nxm] - E[0][i + (j + k*ny)*nxm]) \
+			 - (E[1][i+1 + (j + k*nym)*nx] - E[1][i + (j + k*nym)*nx]));
         }
       }
     }
@@ -1438,8 +1502,8 @@ void yee_updater::step_outer_H()
     for (k=1; k < nzm; ++k) {
       for (j=0; j < nym; j+=nym-1) {
         for (i=0; i < nxm; ++i) {
-	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
-			  - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+	  H[2][i + (j + k*nym)*nxm] += Hcoef * ((E[0][i + (j+1 + k*ny)*nxm] - E[0][i + (j + k*ny)*nxm]) \
+			  - (E[1][i+1 + (j + k*nym)*nx] - E[1][i + (j + k*nym)*nx]));
         }
       }
     }
@@ -1450,8 +1514,8 @@ void yee_updater::step_outer_H()
     for (k=1; k < nzm; ++k) {
       for (j=1; j < nym-1; ++j) {
         for (i=0; i < nxm; i+=nxm-1) {
-	  Hz[i + (j + k*nym)*nxm] += Hcoef * ((Ex[i + (j+1 + k*ny)*nxm] - Ex[i + (j + k*ny)*nxm]) \
-			  - (Ey[i+1 + (j + k*nym)*nx] - Ey[i + (j + k*nym)*nx]));
+	  H[2][i + (j + k*nym)*nxm] += Hcoef * ((E[0][i + (j+1 + k*ny)*nxm] - E[0][i + (j + k*ny)*nxm]) \
+			  - (E[1][i+1 + (j + k*nym)*nx] - E[1][i + (j + k*nym)*nx]));
         }
       }
     }
@@ -1495,13 +1559,18 @@ void yee_updater::step_DAB()
         // Ex component
         // get the indices the updater object expects as input from this face.
         // Note that these values are inclusive
-        bound_upd_Ex.get_input_extents(l, low_ind, high_ind);
+        bound_upd[0].get_input_extents(l, low_ind, high_ind);
 
         // Because we overlapped the grid the range may extend outside of the 
         // field arrays. To fix this, we simply change -1 -> 0 in the indexing
         // if it occurs.
         for (i=0;i<3; ++i)
           low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+        // adjust the upper limits to the data extents in the interior
+        high_ind[0] = (high_ind[0] > nx-2) ? nx-2 : high_ind[0];
+        high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
+        high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
 
         // copy in the face values to the Ex faces
         for (k=low_ind[2]; k<=high_ind[2]; ++k) {
@@ -1510,7 +1579,7 @@ void yee_updater::step_DAB()
               ind[0] = i;
               ind[1] = j;
               ind[2] = k;
-              bound_upd_Ex.load_face_data(l, ind, Ex[i + (j + k*ny)*nxm]);
+              bound_upd[0].load_face_data(l, ind, E[0][i + (j + k*ny)*nxm]);
             }
           }
         }
@@ -1518,13 +1587,18 @@ void yee_updater::step_DAB()
         // Ey component
         // get the indices the updater object expects as input from this face.
         // Note that these values are inclusive
-        bound_upd_Ey.get_input_extents(l, low_ind, high_ind);
+        bound_upd[1].get_input_extents(l, low_ind, high_ind);
 
         // Because we overlapped the grid the range may extend outside of the 
         // field arrays. To fix this, we simply change -1 -> 0 in the indexing
         // if it occurs.
         for (i=0;i<3; ++i)
           low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+        // adjust the upper limits to the data extents in the interior
+        high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
+        high_ind[1] = (high_ind[1] > ny-2) ? ny-2 : high_ind[1];
+        high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
 
         // copy in the face values to the Ex faces
         for (k=low_ind[2]; k<=high_ind[2]; ++k) {
@@ -1533,7 +1607,7 @@ void yee_updater::step_DAB()
               ind[0] = i;
               ind[1] = j;
               ind[2] = k;
-              bound_upd_Ey.load_face_data(l, ind, Ey[i + (j + k*nym)*nx]);
+              bound_upd[1].load_face_data(l, ind, E[1][i + (j + k*nym)*nx]);
             }
           }
         }
@@ -1541,13 +1615,18 @@ void yee_updater::step_DAB()
         // Ez component
         // get the indices the updater object expects as input from this face.
         // Note that these values are inclusive
-        bound_upd_Ez.get_input_extents(l, low_ind, high_ind);
+        bound_upd[2].get_input_extents(l, low_ind, high_ind);
 
         // Because we overlapped the grid the range may extend outside of the 
         // field arrays. To fix this, we simply change -1 -> 0 in the indexing
         // if it occurs.
         for (i=0;i<3; ++i)
           low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+        // adjust the upper limits to the data extents in the interior
+        high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
+        high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
+        high_ind[2] = (high_ind[2] > nz-2) ? nz-2 : high_ind[2];
 
         // copy in the face values to the Ex faces
         for (k=low_ind[2]; k<=high_ind[2]; ++k) {
@@ -1556,7 +1635,7 @@ void yee_updater::step_DAB()
               ind[0] = i;
               ind[1] = j;
               ind[2] = k;
-              bound_upd_Ez.load_face_data(l, ind, Ez[i + (j + k*ny)*nx]);
+              bound_upd[2].load_face_data(l, ind, E[2][i + (j + k*ny)*nx]);
             }
           }
         }
@@ -1564,9 +1643,9 @@ void yee_updater::step_DAB()
     } // end for 
 
     // compute updates
-    bound_upd_Ex.compute_updates();
-    bound_upd_Ey.compute_updates();
-    bound_upd_Ez.compute_updates();
+    bound_upd[0].compute_updates();
+    bound_upd[1].compute_updates();
+    bound_upd[2].compute_updates();
 
     // now copy the updated values from the DAB back into the fields. We only
     // need to copy the tangential fields because the normal components should
@@ -1583,13 +1662,18 @@ void yee_updater::step_DAB()
 
           // get the indices the updater object expects to output from this face.
           // Note that these values are inclusive
-          bound_upd_Ex.get_output_extents(l, low_ind, high_ind);
+          bound_upd[0].get_output_extents(l, low_ind, high_ind);
 
           // Because we overlapped the grid the range may extend outside of the 
           // field arrays. To fix this, we simply change -1 -> 0 in the indexing
           // if it occurs.
           for (i=0;i<3; ++i)
             low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+          // adjust the upper limits to the data extents in the interior
+          high_ind[0] = (high_ind[0] > nx-2) ? nx-2 : high_ind[0];
+          high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
+          high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
 
           // copy in the face values to the Ex faces
           for (k=low_ind[2]; k<=high_ind[2]; ++k) {
@@ -1598,7 +1682,7 @@ void yee_updater::step_DAB()
                 ind[0] = i;
                 ind[1] = j;
                 ind[2] = k;
-                Ex[i + (j + k*ny)*nxm] = bound_upd_Ex.get_new_face_vals(l, ind);
+                E[0][i + (j + k*ny)*nxm] = bound_upd[0].get_new_face_vals(l, ind);
               }
             }
           }
@@ -1609,13 +1693,18 @@ void yee_updater::step_DAB()
 
           // get the indices the updater object expects as output from this face.
           // Note that these values are inclusive
-          bound_upd_Ey.get_output_extents(l, low_ind, high_ind);
+          bound_upd[1].get_output_extents(l, low_ind, high_ind);
 
           // Because we overlapped the grid the range may extend outside of the 
           // field arrays. To fix this, we simply change -1 -> 0 in the indexing
           // if it occurs.
           for (i=0;i<3; ++i)
             low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+          // adjust the upper limits to the data extents in the interior
+          high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
+          high_ind[1] = (high_ind[1] > ny-2) ? ny-2 : high_ind[1];
+          high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
 
           // copy in the face values to the Ex faces
           for (k=low_ind[2]; k<=high_ind[2]; ++k) {
@@ -1624,7 +1713,7 @@ void yee_updater::step_DAB()
                 ind[0] = i;
                 ind[1] = j;
                 ind[2] = k;
-                Ey[i + (j + k*nym)*nx] = bound_upd_Ey.get_new_face_vals(l, ind);
+                E[1][i + (j + k*nym)*nx] = bound_upd[1].get_new_face_vals(l, ind);
               }
             }
           }
@@ -1635,13 +1724,18 @@ void yee_updater::step_DAB()
 
           // get the indices the updater object expects as output from this face.
           // Note that these values are inclusive
-          bound_upd_Ez.get_output_extents(l, low_ind, high_ind);
+          bound_upd[2].get_output_extents(l, low_ind, high_ind);
 
           // Because we overlapped the grid the range may extend outside of the 
           // field arrays. To fix this, we simply change -1 -> 0 in the indexing
           // if it occurs.
           for (i=0;i<3; ++i)
             low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+
+          // adjust the upper limits to the data extents in the interior
+          high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
+          high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
+          high_ind[2] = (high_ind[2] > nz-2) ? nz-2 : high_ind[2];
 
           // copy in the face values to the Ex faces
           for (k=low_ind[2]; k<=high_ind[2]; ++k) {
@@ -1650,7 +1744,7 @@ void yee_updater::step_DAB()
                 ind[0] = i;
                 ind[1] = j;
                 ind[2] = k;
-                Ez[i + (j + k*ny)*nx] = bound_upd_Ez.get_new_face_vals(l, ind);
+                E[2][i + (j + k*ny)*nx] = bound_upd[2].get_new_face_vals(l, ind);
               }
             }
           }
@@ -1678,41 +1772,45 @@ void yee_updater::get_dab_vals_loop(std::vector<double> &buffer,
                          const bool &isedge) 
 {
 
+  /* DO NOT THREAD THESE LOOPS
+     We are depending on the order being the same
+  */
+
   int i,j,k,p,q, ind[3];
 
   if (isedge) {
     int pind[2];
     for (p=plow[0]; p<=phigh[0]; ++p) {
-	pind[0] = p;
-	for (q=plow[1]; q<=phigh[1]; ++q) {
-	  pind[1] = q;
-	  for (k=low[2]; k<=high[2]; ++k) {
-	    ind[2] = k;
-	    for (j=low[1]; j<=high[1]; ++j) {
-	      ind[1] = j;
-	      for (i=low[0]; i<=high[0]; ++i) {
-		ind[0] = i;
-		buffer.push_back(updater.get_edge_auxiliary_vars(side, ind, pind));
-	      } // i
-	    } // j
-	  } // k
-	} // q
-      } // p
-    } else {
-      for (p=plow[0]; p<=phigh[0]; ++p) {
+      pind[0] = p;
+      for (q=plow[1]; q<=phigh[1]; ++q) {
+	pind[1] = q;
 	for (k=low[2]; k<=high[2]; ++k) {
 	  ind[2] = k;
 	  for (j=low[1]; j<=high[1]; ++j) {
 	    ind[1] = j;
 	    for (i=low[0]; i<=high[0]; ++i) {
 	      ind[0] = i;
-	      buffer.push_back(updater.get_auxiliary_vars(side, ind, p));
+	      buffer.push_back(updater.get_edge_auxiliary_vars(side, ind, pind));
 	    } // i
 	  } // j
 	} // k
-      } // p
-    }
+      } // q
+    } // p
+  } else {
+    for (p=plow[0]; p<=phigh[0]; ++p) {
+      for (k=low[2]; k<=high[2]; ++k) {
+	ind[2] = k;
+	for (j=low[1]; j<=high[1]; ++j) {
+	  ind[1] = j;
+	  for (i=low[0]; i<=high[0]; ++i) {
+	    ind[0] = i;
+	    buffer.push_back(updater.get_auxiliary_vars(side, ind, p));
+	  } // i
+	} // j
+      } // k
+    } // p
   }
+}
 
 
 /*******************************************************************************
@@ -1728,43 +1826,46 @@ void yee_updater::set_dab_vals_loop(std::vector<double> &buffer,
                          const int *phigh,
                          const bool &isedge) 
 {
-    int i,j,k,p,q, ind[3];
+  
+  /* DO NOT THREAD THESE LOOPS
+     We are depending on the order being the same
+  */
+  
+  int i,j,k,p,q, ind[3];
 
-    if (isedge) {
-      int pind[2];
-      for (p=plow[0]; p<=phigh[0]; ++p) {
-	pind[0] = p;
-	for (q=plow[1]; q<=phigh[1]; ++q) {
-	  pind[1] = q;
-	  for (k=low[2]; k<=high[2]; ++k) {
-	    ind[2] = k;
-	    for (j=low[1]; j<=high[1]; ++j) {
-	      ind[1] = j;
-	      for (i=low[0]; i<=high[0]; ++i) {
-		ind[0] = i;
-		updater.set_edge_auxiliary_vars(side, ind, pind, buffer[count++]);
-
-                
-	      } // i
-	    } // j
-	  } // k
-	} // q
-      } // p
-    } else {
-      for (p=plow[0]; p<=phigh[0]; ++p) {
+  if (isedge) {
+    int pind[2];
+    for (p=plow[0]; p<=phigh[0]; ++p) {
+      pind[0] = p;
+      for (q=plow[1]; q<=phigh[1]; ++q) {
+	pind[1] = q;
 	for (k=low[2]; k<=high[2]; ++k) {
 	  ind[2] = k;
 	  for (j=low[1]; j<=high[1]; ++j) {
 	    ind[1] = j;
 	    for (i=low[0]; i<=high[0]; ++i) {
 	      ind[0] = i;
-	      updater.set_auxiliary_vars(side, ind, p, buffer[count++]);
-	    } // i
-	  } // j
-	} // k
-      } // p
-    }
+	      updater.set_edge_auxiliary_vars(side, ind, pind, buffer[count++]);
+            } // i
+          } // j
+        } // k
+      } // q
+    } // p
+  } else {
+    for (p=plow[0]; p<=phigh[0]; ++p) {
+      for (k=low[2]; k<=high[2]; ++k) {
+	ind[2] = k;
+	for (j=low[1]; j<=high[1]; ++j) {
+	  ind[1] = j;
+	  for (i=low[0]; i<=high[0]; ++i) {
+	    ind[0] = i;
+	    updater.set_auxiliary_vars(side, ind, p, buffer[count++]);
+	  } // i
+	} // j
+      } // k
+    } // p
   }
+}
 
 
 /*******************************************************************************
@@ -1843,23 +1944,23 @@ void yee_updater::calc_DAB_send_params()
   for (l=0; l<send_dirs.size(); ++l) {
     switch (send_dirs[l]) {
             
-      case 0: // WEST
-        send_mpi_dirs.push_back(WEST);
+      case 0: // MPI_DIR[0]
+        send_mpi_dirs.push_back(MPI_DIR[0]);
         break;
-      case 1: // EAST
-        send_mpi_dirs.push_back(EAST);
+      case 1: // MPI_DIR[1]
+        send_mpi_dirs.push_back(MPI_DIR[1]);
         break;
-      case 2: // SOUTH
-        send_mpi_dirs.push_back(SOUTH);
+      case 2: // MPI_DIR[2]
+        send_mpi_dirs.push_back(MPI_DIR[2]);
         break;
-      case 3: // NORTH
-        send_mpi_dirs.push_back(NORTH);
+      case 3: // MPI_DIR[3]
+        send_mpi_dirs.push_back(MPI_DIR[3]);
         break;
-      case 4: // DOWN
-        send_mpi_dirs.push_back(DOWN);
+      case 4: // MPI_DIR[4]
+        send_mpi_dirs.push_back(MPI_DIR[4]);
         break;
-      case 5: // UP
-        send_mpi_dirs.push_back(UP);
+      case 5: // MPI_DIR[5]
+        send_mpi_dirs.push_back(MPI_DIR[5]);
         break;
     }
   }
@@ -1871,18 +1972,19 @@ void yee_updater::calc_DAB_send_params()
 void yee_updater::send_DAB()
 {
 
-  // notice that we could make this much shorter if we declared the DAB updaters
-  // as an array instead of individually for each component. We hope this 
-  // presentation is slightly clearer.
-
-  unsigned int l,m, side, sidea;
+  unsigned int i,l,m, side, sidea;
   int edge;
   int low[3], high[3], plow[2], phigh[2];
   double t1, t2;
 
+  static int flag;
+
   // start timer
   t1 = MPI_Wtime();
 
+  for (int k=0; k<8; k++) {
+ 
+  if (my_id == k)
   if (isBoundaryProc) {
 
     // loop over the directions we need to send
@@ -1897,129 +1999,82 @@ void yee_updater::send_DAB()
       // loop over the sides we need to send in the current direction
       for (m=0; m<send_sides[l].size(); ++m) {
 
-        sidea = send_sides[l].at(m);
+        // loop over the components
+        for (i=0; i<3; ++i) {
 
-        // get data extents for Ex
-        // This gets us the indices for all the points on the plane
-        // parallel to the phyiscal boundary
-        bound_upd_Ex.get_output_extents(sidea, low, high);
+          sidea = send_sides[l].at(m);
 
-        // now we need to restrict to second to last line of points parallel to 
-        // the boundary we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
-        }
+          // get data extents for current component
+          // This gets us the indices for all the points on the plane
+          // parallel to the phyiscal boundary
+          bound_upd[i].get_output_extents(sidea, low, high);
 
-        // copy data auxilliary data into the send buffer
-        plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ex.get_num_recursions(sidea);
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, sidea, low, high, plow, phigh);
+          // now we need to restrict to second to last line of points parallel to 
+          // the boundary we are sending. side / 2 gives us the component of the
+          // extents we need to modify and side % 2 tells us if we need to modify
+          // the low or high extents. Here, we also adjust for the overlap
+          // based on the component
+          if (side % 2 == 0) { // left side in the appropriate direction
+            high[side / 2] = (side / 2 == i) ? ++ ++low[side / 2] : ++low[side / 2];
+          } else { // right side in the appropriate direction
+            low[side / 2] = (side / 2 == i) ? -- --high[side / 2] : --high[side / 2];       
+          }
 
-        // get data extents for Ey
-        // This gets us the indices for all the points on the plane
-        // parallel to the phyiscal boundary
-        bound_upd_Ey.get_output_extents(sidea, low, high);
+          // adjust to account for the grid overlap
+          
 
-        // now we need to restrict to second to last line of points parallel to 
-        // the boundary we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
-        }
+          // copy data auxilliary data into the send buffer
+          plow[0] = 0; // auxilliary index bounds
+          phigh[0] = bound_upd[i].get_num_recursions(sidea);
+          get_dab_vals_loop(DAB_sbuf[side], bound_upd[i], sidea, low, high, plow, phigh);
 
-        // copy data auxilliary data into the send buffer
-        plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ey.get_num_recursions(sidea);
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, sidea, low, high, plow, phigh);
+          if (flag == 0) {
+             
+            std::cout << "    id = " << my_id << " side = " << side;
+            if (i == 0) {
+              std::cout << " Ex DAB send";
+            } else if (i == 1) {
+              std::cout << " Ey DAB send";
+            } else {
+              std::cout << " Ez DAB send";
+            }
+           
+            std::cout << " coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
+              << " x (" << coord[1] + (low[1]+ 0.5)*h << ", " << coord[1] + (high[1]+ 0.5)*h << ")" 
+              << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
 
-        // get data extents for Ez
-        // This gets us the indices for all the points on the plane
-        // parallel to the phyiscal boundary
-        bound_upd_Ez.get_output_extents(sidea, low, high);
+          }
 
-        // now we need to restrict to second to last line of points parallel to 
-        // the boundary we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
-        }
-
-        // copy data auxilliary data into the send buffer
-        plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ez.get_num_recursions(sidea);
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, sidea, low, high, plow, phigh);
+        } // loop over components
 
       } // end loop over sides in the current direction
+
       // now send any edge data
       if (send_sides[l].size() == 2) {
+ 
+        // loop over the components
+        for (i=0; i<3; ++i) {
 
-        // Ex
-        // get edge index
-        edge = bound_upd_Ex.get_edge_index(send_sides[l][0], send_sides[l][1]);
+          // get edge index
+          edge = bound_upd[i].get_edge_index(send_sides[l][0], send_sides[l][1]);
 
-        // get edge data extents
-        bound_upd_Ex.get_edge_extents(edge, low, high, plow, phigh);
+          // get edge data extents
+          bound_upd[i].get_edge_extents(edge, low, high, plow, phigh);
 
-        // now we need to restrict to second to last point parallel to 
-        // the boundaries we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-        high[side / 2] = ++low[side / 2];
-        } else { // right side in the appropriate direction
-        low[side / 2] = --high[side / 2];       
-        }
+          // now we need to restrict to second to last point parallel to 
+          // the boundaries we are sending. side / 2 gives us the component of the
+          // extents we need to modify and side % 2 tells us if we need to modify
+          // the low or high extents
+          if (side % 2 == 0) { // left side in the appropriate direction
+            high[side / 2] = (side / 2 == i) ? ++ ++low[side / 2] : ++low[side / 2];
+          } else { // right side in the appropriate direction
+            low[side / 2] = (side / 2 == i) ? -- --high[side / 2] : --high[side / 2];       
+          }
 
-        // the true at the end tells the function plow, phigh are arrays of len 2
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ex, edge, low, high, plow, phigh, true);
+          // the true at the end tells the function plow, phigh are arrays of len 2
+          get_dab_vals_loop(DAB_sbuf[side], bound_upd[i], edge, low, high, plow, phigh, true);
 
-        // Ey
-        // get edge index
-        edge = bound_upd_Ey.get_edge_index(send_sides[l][0], send_sides[l][1]);
-
-        // get edge data extents
-        bound_upd_Ey.get_edge_extents(edge, low, high, plow, phigh);
-
-        // now we need to restrict to second to last point parallel to 
-        // the boundaries we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
-        }
-        // the true at the end tells the function plow, phigh are arrays of len 2
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ey, edge, low, high, plow, phigh, true);
-
-        // Ez
-        // get edge index
-        edge = bound_upd_Ez.get_edge_index(send_sides[l][0], send_sides[l][1]);
-
-        // get edge data extents
-        bound_upd_Ez.get_edge_extents(edge, low, high, plow, phigh);
-
-        // now we need to restrict to second to last point parallel to 
-        // the boundaries we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = ++low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = --high[side / 2];       
-        }
-        // the true at the end tells the function plow, phigh are arrays of len 2
-        get_dab_vals_loop(DAB_sbuf[side], bound_upd_Ez, edge, low, high, plow, phigh, true);
+        } // end loop over components
 
       } // end if 2 sides
 
@@ -2050,6 +2105,12 @@ void yee_updater::send_DAB()
     } // end loop over send directions
 
   } // end if boundary proc
+
+  MPI_Barrier(grid_comm);
+ 
+  }
+
+  flag++;
   
   // stop timer
   t2 = MPI_Wtime();
@@ -2065,7 +2126,7 @@ void yee_updater::recv_DAB()
   // note the recieve directions are the same as the send directions, so we do
   // almost exactly the same thing here as in send_DAB() except we copy from the
   // buffers to the DAB.
-  unsigned int l,m, side, edge, sidea;
+  unsigned int i,l,m, side, edge, sidea;
   int count;
   int low[3], high[3], plow[2], phigh[2];
   double t1, t2;
@@ -2080,6 +2141,14 @@ void yee_updater::recv_DAB()
   DAB_recv_req.clear();
 
   // copy the values from the buffers
+    static int flag;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  for (int k=0; k<8; k++) {
+ 
+  if (my_id == k)
   if (isBoundaryProc) {
 
     // loop over the directions we need to send
@@ -2093,132 +2162,88 @@ void yee_updater::recv_DAB()
       // loop over the sides we need to send in the current direction
       for (m=0; m<send_sides[l].size(); ++m) {
 
-        sidea = send_sides[l].at(m);
+        // loop over components
+        for (i=0; i<3; ++i) {
 
-        // get data extents for Ex
-        // This gets us the indices for all the points on the plane
-        // parallel to the phyiscal boundary
-        bound_upd_Ex.get_output_extents(sidea, low, high);
+          sidea = send_sides[l].at(m);
 
-        // now we need to restrict to  last line of points parallel to 
-        // the boundary we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = high[side / 2];       
+          // This gets us the indices for all the points on the plane
+          // parallel to the phyiscal boundary
+          bound_upd[i].get_output_extents(sidea, low, high);
+
+          // now we need to restrict to  last line of points parallel to 
+          // the boundary we are sending. side / 2 gives us the component of the
+          // extents we need to modify and side % 2 tells us if we need to modify
+          // the low or high extents
+          if (side % 2 == 0) { // left side in the appropriate direction
+            high[side / 2] = low[side / 2];
+          } else { // right side in the appropriate direction
+            low[side / 2] = high[side / 2];       
+          }
+
+          // copy data auxilliary data into the send buffer
+          plow[0] = 0; // auxilliary index bounds
+          phigh[0] = bound_upd[i].get_num_recursions(sidea);
+          set_dab_vals_loop(DAB_rbuf[side], bound_upd[i], count, sidea, low, high, plow, phigh);
+
+          if (flag == 0) {
+             
+            std::cout << "    id = " << my_id << " side = " << side;
+            if (i == 0) {
+              std::cout << " Ex DAB recv";
+            } else if (i == 1) {
+              std::cout << " Ey DAB recv";
+            } else {
+              std::cout << " Ez DAB recv";
+            }
+
+            std::cout << " coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
+              << " x (" << coord[1] + (low[1]+ 0.5)*h << ", " << coord[1] + (high[1]+ 0.5)*h << ")" 
+              << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
+
+          }
+           
         }
-
-        // copy data auxilliary data into the send buffer
-        plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ex.get_num_recursions(sidea);
-        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ex, count, sidea, low, high, plow, phigh);
-
-        // get data extents for Ey
-        // This gets us the indices for all the points on the plane
-        // parallel to the phyiscal boundary
-        bound_upd_Ey.get_output_extents(sidea, low, high);
-
-        // now we need to restrict to last line of points parallel to 
-        // the boundary we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = high[side / 2];       
-        }
-
-        // copy data auxilliary data into the send buffer
-        plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ey.get_num_recursions(sidea);
-        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ey, count, sidea, low, high, plow, phigh);
-
-        // get data extents for Ez
-        // This gets us the indices for all the points on the plane
-        // parallel to the phyiscal boundary
-        bound_upd_Ez.get_output_extents(sidea, low, high);
-
-        // now we need to restrict to last line of points parallel to 
-        // the boundary we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = high[side / 2];       
-        }
-
-        // copy data auxilliary data into the send buffer
-        plow[0] = 0; // auxilliary index bounds
-        phigh[0] = bound_upd_Ez.get_num_recursions(sidea);
-        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ez, count, sidea, low, high, plow, phigh);
 
       } // end loop over sides in the current direction
 
       // now receive any edge data
       if (send_sides[l].size() == 2) {
 
-        // Ex
-        // get edge index
-        edge = bound_upd_Ex.get_edge_index(send_sides[l][0], send_sides[l][1]);
-        // get edge data extents
-        bound_upd_Ex.get_edge_extents(edge, low, high, plow, phigh);
+        // loop over components
+        for (i=0; i<3; ++i) {
 
-        // now we need to restrict to last point parallel to 
-        // the boundaries we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = high[side / 2];       
+          // get edge index
+          edge = bound_upd[i].get_edge_index(send_sides[l][0], send_sides[l][1]);
+          // get edge data extents
+          bound_upd[i].get_edge_extents(edge, low, high, plow, phigh);
+
+          // now we need to restrict to last point parallel to 
+          // the boundaries we are sending. side / 2 gives us the component of the
+          // extents we need to modify and side % 2 tells us if we need to modify
+          // the low or high extents
+          if (side % 2 == 0) { // left side in the appropriate direction
+            high[side / 2] = low[side / 2];
+          } else { // right side in the appropriate direction
+            low[side / 2] = high[side / 2];       
+          }
+
+          // the true at the end tells the function plow, phigh are arrays of len 2
+          set_dab_vals_loop(DAB_rbuf[side], bound_upd[i], count, edge, low, high, plow, phigh, true);
+
         }
-        // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ex, count, edge, low, high, plow, phigh, true);
-
-        // Ey
-        // get edge index
-        edge = bound_upd_Ey.get_edge_index(send_sides[l][0], send_sides[l][1]);
-        // get edge data extents
-        bound_upd_Ey.get_edge_extents(edge, low, high, plow, phigh);
-
-        // now we need to restrict to last point parallel to 
-        // the boundaries we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = high[side / 2];       
-        }
-        // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ey, count, edge, low, high, plow, phigh, true);
-
-        // Ez
-        // get edge index
-        edge = bound_upd_Ez.get_edge_index(send_sides[l][0], send_sides[l][1]);
-        // get edge data extents
-        bound_upd_Ez.get_edge_extents(edge, low, high, plow, phigh);
-
-        // now we need to restrict to last point parallel to 
-        // the boundaries we are sending. side / 2 gives us the component of the
-        // extents we need to modify and side % 2 tells us if we need to modify
-        // the low or high extents
-        if (side % 2 == 0) { // left side in the appropriate direction
-          high[side / 2] = low[side / 2];
-        } else { // right side in the appropriate direction
-          low[side / 2] = high[side / 2];       
-        }
-        // the true at the end tells the function plow, phigh are arrays of len 2
-        set_dab_vals_loop(DAB_rbuf[side], bound_upd_Ez, count, edge, low, high, plow, phigh, true);
 
       } // end if 2 sides
 
     } // end loop over send directions
 
   } // end if boundary proc
+
+  MPI_Barrier(grid_comm);
+ 
+  }
+
+  flag++;
 
   // make sure all the sends have completed
   if (MPI_Waitall(DAB_send_req.size(), DAB_send_req.data(), MPI_STATUSES_IGNORE) != MPI_SUCCESS)
@@ -2265,16 +2290,16 @@ void yee_updater::send_E()
     i = 1; // grid overlap
     for (k = 0; k<nz; ++k)
       for (j=0; j<nym; ++j)
-        E_sbuf[0][j + k*nym] = Ey[i + (j + k*nym)*nx];
+        E_sbuf[0][j + k*nym] = E[1][i + (j + k*nym)*nx];
 
       for (k = 0; k<nzm; ++k)
         for (j=0; j<ny; ++j)
-          E_sbuf[0][ns + j + k*ny] = Ez[i + (j + k*ny)*nx];
+          E_sbuf[0][ns + j + k*ny] = E[2][i + (j + k*ny)*nx];
 
-      if (MPI_Isend(E_sbuf[0].data(), 2*ns, MPI_DOUBLE, WEST, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+      if (MPI_Isend(E_sbuf[0].data(), 2*ns, MPI_DOUBLE, MPI_DIR[0], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
-      if (MPI_Irecv(E_rbuf[0].data(), 2*ns, MPI_DOUBLE, WEST, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+      if (MPI_Irecv(E_rbuf[0].data(), 2*ns, MPI_DOUBLE, MPI_DIR[0], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
     }
@@ -2290,16 +2315,16 @@ void yee_updater::send_E()
       i = nx-2; // overlap
       for (k = 0; k<nz; ++k)
         for (j=0; j<nym; ++j)
-          E_sbuf[1][j + k*nym] = Ey[i + (j + k*nym)*nx];
+          E_sbuf[1][j + k*nym] = E[1][i + (j + k*nym)*nx];
 
       for (k = 0; k<nzm; ++k)
         for (j=0; j<ny; ++j)
-          E_sbuf[1][ns + j + k*ny] = Ez[i + (j + k*ny)*nx];
+          E_sbuf[1][ns + j + k*ny] = E[2][i + (j + k*ny)*nx];
 
-      if (MPI_Isend(E_sbuf[1].data(), 2*ns, MPI_DOUBLE, EAST, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+      if (MPI_Isend(E_sbuf[1].data(), 2*ns, MPI_DOUBLE, MPI_DIR[1], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
-      if (MPI_Irecv(E_rbuf[1].data(), 2*ns, MPI_DOUBLE, EAST, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+      if (MPI_Irecv(E_rbuf[1].data(), 2*ns, MPI_DOUBLE, MPI_DIR[1], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
     }
@@ -2315,16 +2340,16 @@ void yee_updater::send_E()
       j = 1; // overlap
       for (k = 0; k<nz; ++k)
         for (i=0; i<nxm; ++i)
-          E_sbuf[2][i + k*nxm] = Ex[i + (j + k*ny)*nxm];
+          E_sbuf[2][i + k*nxm] = E[0][i + (j + k*ny)*nxm];
 
       for (k = 0; k<nzm; ++k)
         for (i=0; i<nx; ++i)
-          E_sbuf[2][ns + i + k*nx] = Ez[i + (j + k*ny)*nx];
+          E_sbuf[2][ns + i + k*nx] = E[2][i + (j + k*ny)*nx];
 
-      if (MPI_Isend(E_sbuf[2].data(), 2*ns, MPI_DOUBLE, SOUTH, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+      if (MPI_Isend(E_sbuf[2].data(), 2*ns, MPI_DOUBLE, MPI_DIR[2], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
-      if (MPI_Irecv(E_rbuf[2].data(), 2*ns, MPI_DOUBLE, SOUTH, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+      if (MPI_Irecv(E_rbuf[2].data(), 2*ns, MPI_DOUBLE, MPI_DIR[2], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
     }
@@ -2340,16 +2365,16 @@ void yee_updater::send_E()
       j = ny-2; // overlap
       for (k = 0; k<nz; ++k)
         for (i=0; i<nxm; ++i)
-          E_sbuf[3][i + k*nxm] = Ex[i + (j + k*ny)*nxm];
+          E_sbuf[3][i + k*nxm] = E[0][i + (j + k*ny)*nxm];
 
       for (k = 0; k<nzm; ++k)
         for (i=0; i<nx; ++i)
-          E_sbuf[3][ns + i + k*nx] = Ez[i + (j + k*ny)*nx];
+          E_sbuf[3][ns + i + k*nx] = E[2][i + (j + k*ny)*nx];
 
-      if (MPI_Isend(E_sbuf[3].data(), 2*ns, MPI_DOUBLE, NORTH, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+      if (MPI_Isend(E_sbuf[3].data(), 2*ns, MPI_DOUBLE, MPI_DIR[3], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
-      if (MPI_Irecv(E_rbuf[3].data(), 2*ns, MPI_DOUBLE, NORTH, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+      if (MPI_Irecv(E_rbuf[3].data(), 2*ns, MPI_DOUBLE, MPI_DIR[3], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
     }
@@ -2365,16 +2390,16 @@ void yee_updater::send_E()
       k = 1; // overlap
       for (j = 0; j<ny; ++j)
         for (i=0; i<nxm; ++i)
-          E_sbuf[4][i + j*nxm] = Ex[i + (j + k*ny)*nxm];
+          E_sbuf[4][i + j*nxm] = E[0][i + (j + k*ny)*nxm];
 
       for (j = 0; j<nym; ++j)
         for (i=0; i<nx; ++i)
-          E_sbuf[4][ns + i + j*nx] = Ey[i + (j + k*nym)*nx];
+          E_sbuf[4][ns + i + j*nx] = E[1][i + (j + k*nym)*nx];
 
-      if (MPI_Isend(E_sbuf[4].data(), 2*ns, MPI_DOUBLE, DOWN, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+      if (MPI_Isend(E_sbuf[4].data(), 2*ns, MPI_DOUBLE, MPI_DIR[4], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
-      if (MPI_Irecv(E_rbuf[4].data(), 2*ns, MPI_DOUBLE, DOWN, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+      if (MPI_Irecv(E_rbuf[4].data(), 2*ns, MPI_DOUBLE, MPI_DIR[4], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
     }
@@ -2390,16 +2415,16 @@ void yee_updater::send_E()
       k = nz-2; // overlap
       for (j = 0; j<ny; ++j)
         for (i=0; i<nxm; ++i)
-          E_sbuf[5][i + j*nxm] = Ex[i + (j + k*ny)*nxm];
+          E_sbuf[5][i + j*nxm] = E[0][i + (j + k*ny)*nxm];
 
       for (j = 0; j<nym; ++j)
         for (i=0; i<nx; ++i)
-          E_sbuf[5][ns + i + j*nx] = Ey[i + (j + k*nym)*nx];
+          E_sbuf[5][ns + i + j*nx] = E[1][i + (j + k*nym)*nx];
 
-      if (MPI_Isend(E_sbuf[5].data(), 2*ns, MPI_DOUBLE, UP, 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+      if (MPI_Isend(E_sbuf[5].data(), 2*ns, MPI_DOUBLE, MPI_DIR[5], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
-      if (MPI_Irecv(E_rbuf[5].data(), 2*ns, MPI_DOUBLE, UP, 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+      if (MPI_Irecv(E_rbuf[5].data(), 2*ns, MPI_DOUBLE, MPI_DIR[5], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
         std::cerr << "MPI_Isend failed" << std::endl;
 
     }
@@ -2439,11 +2464,11 @@ void yee_updater::recv_E()
     i = 0;
     for (k = 0; k<nz; ++k)
       for (j=0; j<nym; ++j)
-        Ey[i + (j + k*nym)*nx] = E_rbuf[0][j + k*nym];
+        E[1][i + (j + k*nym)*nx] = E_rbuf[0][j + k*nym];
 
     for (k = 0; k<nzm; ++k)
       for (j=0; j<ny; ++j)
-        Ez[i + (j + k*ny)*nx] = E_rbuf[0][ns + j + k*ny];
+        E[2][i + (j + k*ny)*nx] = E_rbuf[0][ns + j + k*ny];
 
   }
 
@@ -2453,11 +2478,11 @@ void yee_updater::recv_E()
     i = nx-1;
     for (k = 0; k<nz; ++k)
       for (j=0; j<nym; ++j)
-        Ey[i + (j + k*nym)*nx] = E_rbuf[1][j + k*nym];
+        E[1][i + (j + k*nym)*nx] = E_rbuf[1][j + k*nym];
 
     for (k = 0; k<nzm; ++k)
       for (j=0; j<ny; ++j)
-        Ez[i + (j + k*ny)*nx] = E_rbuf[1][ns + j + k*ny];
+        E[2][i + (j + k*ny)*nx] = E_rbuf[1][ns + j + k*ny];
 
   }
 
@@ -2467,11 +2492,11 @@ void yee_updater::recv_E()
     j = 0; 
     for (k = 0; k<nz; ++k)
       for (i=0; i<nxm; ++i)
-        Ex[i + (j + k*ny)*nxm] = E_rbuf[2][i + k*nxm];
+        E[0][i + (j + k*ny)*nxm] = E_rbuf[2][i + k*nxm];
 
     for (k = 0; k<nzm; ++k)
       for (i=0; i<nx; ++i)
-        Ez[i + (j + k*ny)*nx] = E_rbuf[2][ns + i + k*nx];
+        E[2][i + (j + k*ny)*nx] = E_rbuf[2][ns + i + k*nx];
 
   }
 
@@ -2481,11 +2506,11 @@ void yee_updater::recv_E()
     j = ny-1;
     for (k = 0; k<nz; ++k)
       for (i=0; i<nxm; ++i)
-        Ex[i + (j + k*ny)*nxm] = E_rbuf[3][i + k*nxm];
+        E[0][i + (j + k*ny)*nxm] = E_rbuf[3][i + k*nxm];
 
     for (k = 0; k<nzm; ++k)
       for (i=0; i<nx; ++i)
-        Ez[i + (j + k*ny)*nx] = E_rbuf[3][ns + i + k*nx];
+        E[2][i + (j + k*ny)*nx] = E_rbuf[3][ns + i + k*nx];
 
   }
 
@@ -2495,11 +2520,11 @@ void yee_updater::recv_E()
     k = 0;
     for (j = 0; j<ny; ++j)
       for (i=0; i<nxm; ++i)
-        Ex[i + (j + k*ny)*nxm] = E_rbuf[4][i + j*nxm];
+        E[0][i + (j + k*ny)*nxm] = E_rbuf[4][i + j*nxm];
 
     for (j = 0; j<nym; ++j)
       for (i=0; i<nx; ++i)
-        Ey[i + (j + k*nym)*nx] = E_rbuf[4][ns + i + j*nx];
+        E[1][i + (j + k*nym)*nx] = E_rbuf[4][ns + i + j*nx];
 
   }
 
@@ -2509,11 +2534,11 @@ void yee_updater::recv_E()
     k = nz-1;
     for (j = 0; j<ny; ++j)
       for (i=0; i<nxm; ++i)
-        Ex[i + (j + k*ny)*nxm] = E_rbuf[5][i + j*nxm];
+        E[0][i + (j + k*ny)*nxm] = E_rbuf[5][i + j*nxm];
 
       for (j = 0; j<nym; ++j)
         for (i=0; i<nx; ++i)
-          Ey[i + (j + k*nym)*nx] = E_rbuf[5][ns + i + j*nx];
+          E[1][i + (j + k*nym)*nx] = E_rbuf[5][ns + i + j*nx];
 
   }
 
@@ -2561,7 +2586,7 @@ void yee_updater::load_initial_conds() {
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j;
 	  x[0] = coord[0] + h*i + h/2.0;
-	  Ex[i + (j + k*ny)*nxm] = sol_obj.get_Ex_solution(x, Etime);
+	  E[0][i + (j + k*ny)*nxm] = sol_obj.get_Ex_solution(x, Etime);
 	}
       }
     }
@@ -2576,7 +2601,7 @@ void yee_updater::load_initial_conds() {
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j + h/2.0;
           x[0] = coord[0] + h*i;
-          Ey[i + (j + k*nym)*nx] = sol_obj.get_Ey_solution(x, Etime);
+          E[1][i + (j + k*nym)*nx] = sol_obj.get_Ey_solution(x, Etime);
         }
       }
     }
@@ -2591,7 +2616,7 @@ void yee_updater::load_initial_conds() {
           x[2] = coord[2] + h*k + h/2.0;
           x[1] = coord[1] + h*j;
           x[0] = coord[0] + h*i;
-          Ez[i + (j + k*ny)*nx] = sol_obj.get_Ez_solution(x, Etime);
+          E[2][i + (j + k*ny)*nx] = sol_obj.get_Ez_solution(x, Etime);
         }
       }
     }
@@ -2606,7 +2631,7 @@ void yee_updater::load_initial_conds() {
           x[2] = coord[2] + h*k+ h/2.0;
           x[1] = coord[1] + h*j+ h/2.0;
           x[0] = coord[0] + h*i;
-          Hx[i + (j + k*nym)*nx] = sol_obj.get_Hx_solution(x, Htime);
+          H[0][i + (j + k*nym)*nx] = sol_obj.get_Hx_solution(x, Htime);
         }
       }
     }
@@ -2621,7 +2646,7 @@ void yee_updater::load_initial_conds() {
           x[2] = coord[2] + h*k+ h/2.0;
           x[1] = coord[1] + h*j;
           x[0] = coord[0] + h*i+ h/2.0;
-          Hy[i + (j + k*ny)*nxm] = sol_obj.get_Hy_solution(x, Htime);
+          H[1][i + (j + k*ny)*nxm] = sol_obj.get_Hy_solution(x, Htime);
         }
       }
     }
@@ -2636,7 +2661,7 @@ void yee_updater::load_initial_conds() {
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j+ h/2.0;
           x[0] = coord[0] + h*i+ h/2.0;
-	  Hz[i + (j + k*nym)*nxm] = sol_obj.get_Hz_solution(x, Htime);
+	  H[2][i + (j + k*nym)*nxm] = sol_obj.get_Hz_solution(x, Htime);
 	}
       }
     }
@@ -2677,7 +2702,7 @@ double yee_updater::calc_norm()
     for (k=0; k<nz; k+=skip) {
       for (j=0; j<ny; j+=skip) {
 	for (i=0; i<nxm; i+=skip) {
-          temp += Ex[i + (j + k*ny)*nxm] * Ex[i + (j + k*ny)*nxm];
+          temp += E[0][i + (j + k*ny)*nxm] * E[0][i + (j + k*ny)*nxm];
 	}
       }
     }
@@ -2689,7 +2714,7 @@ double yee_updater::calc_norm()
     for (k=0; k<nz; k+=skip) {
       for (j=0; j<nym; j+=skip) {
         for (i=0; i<nx; i+=skip) {
-          temp += Ey[i + (j + k*nym)*nx] * Ey[i + (j + k*nym)*nx];
+          temp += E[1][i + (j + k*nym)*nx] * E[1][i + (j + k*nym)*nx];
         }
       }
     }
@@ -2701,7 +2726,7 @@ double yee_updater::calc_norm()
     for (k=0; k<nzm; k+=skip) {
       for (j=0; j<ny; j+=skip) {
         for (i=0; i<nx; i+=skip) {
-          temp += Ez[i + (j + k*ny)*nx] * Ez[i + (j + k*ny)*nx];
+          temp += E[2][i + (j + k*ny)*nx] * E[2][i + (j + k*ny)*nx];
         }
       }
     }
@@ -2724,7 +2749,7 @@ double yee_updater::calc_norm()
     for (k=0; k<nzm; k+=skip) {
       for (j=0; j<nym; j+=skip) {
         for (i=0; i<nx; i+=skip) {
-          temp += Hx[i + (j + k*nym)*nx] * Hx[i + (j + k*nym)*nx];
+          temp += H[0][i + (j + k*nym)*nx] * H[0][i + (j + k*nym)*nx];
         }
       }
     }
@@ -2736,7 +2761,7 @@ double yee_updater::calc_norm()
     for (k=0; k<nzm; k+=skip) {
       for (j=0; j<ny; j+=skip) {
         for (i=0; i<nxm; i+=skip) {
-          temp += Hy[i + (j + k*ny)*nxm] * Hy[i + (j + k*ny)*nxm];
+          temp += H[1][i + (j + k*ny)*nxm] * H[1][i + (j + k*ny)*nxm];
         }
       }
     }
@@ -2748,7 +2773,7 @@ double yee_updater::calc_norm()
     for (k=0; k<nz; k+=skip) {
       for (j=0; j<nym; j+=skip) {
         for (i=0; i<nxm; i+=skip) {
-          temp += Hz[i + (j + k*nym)*nxm] * Hz[i + (j + k*nym)*nxm];
+          temp += H[2][i + (j + k*nym)*nxm] * H[2][i + (j + k*nym)*nxm];
 	}
       }
     }
@@ -2798,7 +2823,7 @@ double yee_updater::calc_error()
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j;
 	  x[0] = coord[0] + h*i + h/2.0;
-          sol = sol_obj.get_Ex_solution(x, Etime) - Ex[i + (j + k*ny)*nxm];
+          sol = sol_obj.get_Ex_solution(x, Etime) - E[0][i + (j + k*ny)*nxm];
           temp +=  sol * sol;
 	}
       }
@@ -2814,7 +2839,7 @@ double yee_updater::calc_error()
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j + h/2.0;
 	  x[0] = coord[0] + h*i;
-          sol = sol_obj.get_Ey_solution(x, Etime) - Ey[i + (j + k*nym)*nx];
+          sol = sol_obj.get_Ey_solution(x, Etime) - E[1][i + (j + k*nym)*nx];
           temp += sol * sol;
         }
       }
@@ -2830,7 +2855,7 @@ double yee_updater::calc_error()
           x[2] = coord[2] + h*k + h/2.0;
           x[1] = coord[1] + h*j;
 	  x[0] = coord[0] + h*i;
-          sol = sol_obj.get_Ez_solution(x, Etime) - Ez[i + (j + k*ny)*nx];
+          sol = sol_obj.get_Ez_solution(x, Etime) - E[2][i + (j + k*ny)*nx];
           temp += sol * sol;
         }
       }
@@ -2857,7 +2882,7 @@ double yee_updater::calc_error()
           x[2] = coord[2] + h*k + h/2.0;
           x[1] = coord[1] + h*j + h/2.0;
 	  x[0] = coord[0] + h*i;
-          sol = sol_obj.get_Hx_solution(x, Htime) - Hx[i + (j + k*nym)*nx];
+          sol = sol_obj.get_Hx_solution(x, Htime) - H[0][i + (j + k*nym)*nx];
           temp += sol * sol;
         }
       }
@@ -2873,7 +2898,7 @@ double yee_updater::calc_error()
           x[2] = coord[2] + h*k + h/2.0;
           x[1] = coord[1] + h*j;
 	  x[0] = coord[0] + h*i + h/2.0;
-          sol = sol_obj.get_Hy_solution(x, Htime) - Hy[i + (j + k*ny)*nxm];
+          sol = sol_obj.get_Hy_solution(x, Htime) - H[1][i + (j + k*ny)*nxm];
           temp += sol * sol;
         }
       }
@@ -2889,7 +2914,7 @@ double yee_updater::calc_error()
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j + h/2.0;
 	  x[0] = coord[0] + h*i + h/2.0;
-          sol = sol_obj.get_Hz_solution(x, Htime) - Hz[i + (j + k*nym)*nxm];
+          sol = sol_obj.get_Hz_solution(x, Htime) - H[2][i + (j + k*nym)*nxm];
           temp += sol * sol;
 	}
       }

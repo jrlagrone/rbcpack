@@ -106,7 +106,7 @@ public:
 private:
 
   // storage for field values
-  std::vector<double> Ex, Ey, Ez, Hx, Hy, Hz;
+  std::vector<double> E[3], H[3];
 
   double Hcoef, Ecoef;
 
@@ -129,10 +129,10 @@ private:
   int dab_wt;
   bool isBoundaryProc;
   crbc::BoundaryProperties::Boundary procBounds[6];
-  int NORTH, EAST, SOUTH, WEST, UP, DOWN;
+  int MPI_DIR[6];
   int my_id, cart_rank[3];
   std::vector<int> send_dirs, send_mpi_dirs, send_sides[4];
-  crbc::CrbcUpdates<3, double, int> bound_upd_Ex, bound_upd_Ey, bound_upd_Ez;
+  crbc::CrbcUpdates<3, double, int> bound_upd[3];
   MPI_Comm grid_comm, glob_comm;
   std::vector<MPI_Request> send_req, recv_req;
   std::vector<MPI_Request> DAB_send_req, DAB_recv_req;
