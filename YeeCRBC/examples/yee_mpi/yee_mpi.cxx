@@ -2680,7 +2680,7 @@ void yee_updater::load_initial_conds() {
 *******************************************************************************/
 double yee_updater::calc_norm()
 {
-  int nxm, nym, nzm;
+  int nxm, nym, nzm, is, js, ks;
   double norm = 0.0, temp = 0.0;
   nxm = nx-1;
   nym = ny-1;
@@ -2695,37 +2695,53 @@ double yee_updater::calc_norm()
   {
   #endif
 
+    // figure out where the indexing starts in the case of shared points
+    // we'll assume the process to the "left" owns any duplicate points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 1 : 0; // Ex is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+
     // load Ex values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nz; k+=skip) {
-      for (j=0; j<ny; j+=skip) {
-	for (i=0; i<nxm; i+=skip) {
+    for (k=ks; k<nz; k+=skip) {
+      for (j=js; j<ny; j+=skip) {
+	for (i=is; i<nxm; i+=skip) {
           temp += E[0][i + (j + k*ny)*nxm] * E[0][i + (j + k*ny)*nxm];
 	}
       }
     }
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 2 : 0; 
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 1 : 0; // Ey is normal
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+
     // load Ey values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nz; k+=skip) {
-      for (j=0; j<nym; j+=skip) {
-        for (i=0; i<nx; i+=skip) {
+    for (k=ks; k<nz; k+=skip) {
+      for (j=js; j<nym; j+=skip) {
+        for (i=is; i<nx; i+=skip) {
           temp += E[1][i + (j + k*nym)*nx] * E[1][i + (j + k*nym)*nx];
         }
       }
     }
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 2 : 0; 
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 2 : 0; 
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 1 : 0; // Ez is normal
+
     // load Ez values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nzm; k+=skip) {
-      for (j=0; j<ny; j+=skip) {
-        for (i=0; i<nx; i+=skip) {
+    for (k=ks; k<nzm; k+=skip) {
+      for (j=js; j<ny; j+=skip) {
+        for (i=is; i<nx; i+=skip) {
           temp += E[2][i + (j + k*ny)*nx] * E[2][i + (j + k*ny)*nx];
         }
       }
@@ -2742,37 +2758,52 @@ double yee_updater::calc_norm()
     #pragma omp barrier
     #endif
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 2 : 0; // Hx is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 1 : 0; 
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 1 : 0; 
+
     // load Hx values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nzm; k+=skip) {
-      for (j=0; j<nym; j+=skip) {
-        for (i=0; i<nx; i+=skip) {
+    for (k=ks; k<nzm; k+=skip) {
+      for (j=js; j<nym; j+=skip) {
+        for (i=is; i<nx; i+=skip) {
           temp += H[0][i + (j + k*nym)*nx] * H[0][i + (j + k*nym)*nx];
         }
       }
     }
 
+
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 1 : 0; 
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 2 : 0; // Hy is normal
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 1 : 0; 
     // load Hy values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nzm; k+=skip) {
-      for (j=0; j<ny; j+=skip) {
-        for (i=0; i<nxm; i+=skip) {
+    for (k=ks; k<nzm; k+=skip) {
+      for (j=js; j<ny; j+=skip) {
+        for (i=is; i<nxm; i+=skip) {
           temp += H[1][i + (j + k*ny)*nxm] * H[1][i + (j + k*ny)*nxm];
         }
       }
     }
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 1 : 0; 
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 1 : 0; 
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 2 : 0; // Hz is normal
+
     // load Hz values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nz; k+=skip) {
-      for (j=0; j<nym; j+=skip) {
-        for (i=0; i<nxm; i+=skip) {
+    for (k=ks; k<nz; k+=skip) {
+      for (j=js; j<nym; j+=skip) {
+        for (i=is; i<nxm; i+=skip) {
           temp += H[2][i + (j + k*nym)*nxm] * H[2][i + (j + k*nym)*nxm];
 	}
       }
@@ -2795,7 +2826,7 @@ double yee_updater::calc_norm()
 *******************************************************************************/
 double yee_updater::calc_error()
 {
-  int nxm, nym, nzm;
+  int nxm, nym, nzm, is, js, ks;
   double error = 0.0, temp = 0.0, sol, x[3];
   nxm = nx-1;
   nym = ny-1;
@@ -2813,13 +2844,19 @@ double yee_updater::calc_error()
   {
   #endif
 
+    // figure out where the indexing starts in the case of shared points
+    // we'll assume the process to the "left" owns any duplicate points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 1 : 0; // Ex is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+
     // load Ex values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nz; k+=skip) {
-      for (j=0; j<ny; j+=skip) {
-	for (i=0; i<nxm; i+=skip) {
+    for (k=ks; k<nz; k+=skip) {
+      for (j=js; j<ny; j+=skip) {
+	for (i=is; i<nxm; i+=skip) {
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j;
 	  x[0] = coord[0] + h*i + h/2.0;
@@ -2829,13 +2866,18 @@ double yee_updater::calc_error()
       }
     }
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 2 : 0; // Ey is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 1 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+
     // load Ey values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nz; k+=skip) {
-      for (j=0; j<nym; j+=skip) {
-        for (i=0; i<nx; i+=skip) {
+    for (k=ks; k<nz; k+=skip) {
+      for (j=js; j<nym; j+=skip) {
+        for (i=is; i<nx; i+=skip) {
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j + h/2.0;
 	  x[0] = coord[0] + h*i;
@@ -2845,13 +2887,18 @@ double yee_updater::calc_error()
       }
     }
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 2 : 0; // Ez is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 1 : 0;
+
     // load Ez values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nzm; k+=skip) {
-      for (j=0; j<ny; j+=skip) {
-        for (i=0; i<nx; i+=skip) {
+    for (k=ks; k<nzm; k+=skip) {
+      for (j=js; j<ny; j+=skip) {
+        for (i=is; i<nx; i+=skip) {
           x[2] = coord[2] + h*k + h/2.0;
           x[1] = coord[1] + h*j;
 	  x[0] = coord[0] + h*i;
@@ -2872,13 +2919,18 @@ double yee_updater::calc_error()
     #pragma omp barrier
     #endif
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 2 : 0; // Hx is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 1 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 1 : 0;
+
     // load Hx values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nzm; k+=skip) {
-      for (j=0; j<nym; j+=skip) {
-        for (i=0; i<nx; i+=skip) {
+    for (k=ks; k<nzm; k+=skip) {
+      for (j=js; j<nym; j+=skip) {
+        for (i=is; i<nx; i+=skip) {
           x[2] = coord[2] + h*k + h/2.0;
           x[1] = coord[1] + h*j + h/2.0;
 	  x[0] = coord[0] + h*i;
@@ -2888,13 +2940,18 @@ double yee_updater::calc_error()
       }
     }
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 1 : 0; // Hy is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 1 : 0;
+
     // load Hy values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nzm; k+=skip) {
-      for (j=0; j<ny; j+=skip) {
-        for (i=0; i<nxm; i+=skip) {
+    for (k=ks; k<nzm; k+=skip) {
+      for (j=js; j<ny; j+=skip) {
+        for (i=is; i<nxm; i+=skip) {
           x[2] = coord[2] + h*k + h/2.0;
           x[1] = coord[1] + h*j;
 	  x[0] = coord[0] + h*i + h/2.0;
@@ -2904,13 +2961,18 @@ double yee_updater::calc_error()
       }
     }
 
+    // figure out where the indexing starts in the case of shared points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 1 : 0; // Hz is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 1 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+
     // load Hz values
     #if USE_OPENMP
     #pragma omp for reduction(+:temp) collapse(3)
     #endif
-    for (k=0; k<nz; k+=skip) {
-      for (j=0; j<nym; j+=skip) {
-        for (i=0; i<nxm; i+=skip) {
+    for (k=ks; k<nz; k+=skip) {
+      for (j=js; j<nym; j+=skip) {
+        for (i=is; i<nxm; i+=skip) {
           x[2] = coord[2] + h*k;
           x[1] = coord[1] + h*j + h/2.0;
 	  x[0] = coord[0] + h*i + h/2.0;
