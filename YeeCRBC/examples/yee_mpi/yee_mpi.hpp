@@ -174,6 +174,9 @@ private:
   /// update the DAB layers
   void step_DAB();
 
+  /// copy the DAB updates back into the interior
+  void copy_DAB();
+
   /// often used loop that copies data from the DAB to the interior
   void get_dab_vals_loop(std::vector<double> &buffer,
                          crbc::CrbcUpdates<3, double, int> &updater,

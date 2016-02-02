@@ -275,65 +275,6 @@ void yee_updater::run()
     glob_norm = std::sqrt(glob_norm);
   }
 
-  for (int l = 0; l<8; ++l) {
-    if ((my_id == l)) {
-
-      std::cout << "my_id = " << my_id << std::endl;
-      std::cout << "  Ex :" << std::endl;
-      std::cout << "    coord (" << coord[0] + h/2.0 << ", " << coord[0] + (nx -1.5)*h << ")"
-                << " x (" << coord[1] << ", " << coord[1] + (ny-1)*h << ")" 
-                << " x (" << coord[2] << ", " << coord[2] + (nz-1)*h << ")" << std::endl;
-
-     std::cout << "  Ey :" << std::endl;
-      std::cout << "    coord (" << coord[0] << ", " << coord[0] + (nx-1)*h << ")"
-                << " x (" << coord[1] + h/2.0<< ", " << coord[1] + (ny -1.5)*h << ")" 
-                << " x (" << coord[2] << ", " << coord[2] + (nz-1)*h << ")" << std::endl;
-
-     std::cout << "  Ez :" << std::endl;
-      std::cout << "    coord (" << coord[0] << ", " << coord[0] + (nx-1)*h << ")"
-                << " x (" << coord[1] << ", " << coord[1] + (ny-1)*h << ")" 
-                << " x (" << coord[2] + h/2.0<< ", " << coord[2] + (nz -1.5)*h << ")" << std::endl;
-
-     int high[3], low[3]; 
-
-     for (int i=0; i<6; ++i) {
-       if (procBounds[i] != crbc::BoundaryProperties::CRBC)
-         continue;
-       bound_upd[0].get_input_extents(i, low, high);
-
-       std::cout << "    side = " << i << " Ex DAB coord (" << coord[0] + (low[0] + 0.5)*h << ", " << coord[0] + (high[0] + 0.5)*h << ")"
-                << " x (" << coord[1] + low[1]*h << ", " << coord[1] + high[1]*h << ")" 
-                << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
-
-     }
-
-     for (int i=0; i<6; ++i) {
-       if (procBounds[i] != crbc::BoundaryProperties::CRBC)
-         continue;
-       bound_upd[1].get_input_extents(i, low, high);
-
-       std::cout << "    side = " << i << " Ey DAB coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
-              << " x (" << coord[1] + (low[1]+ 0.5)*h << ", " << coord[1] + (high[1]+ 0.5)*h << ")" 
-              << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
-
-     }
-
-     for (int i=0; i<6; ++i) {
-       if (procBounds[i] != crbc::BoundaryProperties::CRBC)
-         continue;
-       bound_upd[2].get_input_extents(i, low, high);
-
-       std::cout << "    side = " << i << " Ez DAB coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
-                << " x (" << coord[1] + low[1]*h << ", " << coord[1] + high[1]*h << ")" 
-                << " x (" << coord[2] + (low[2]+ 0.5)*h<< ", " << coord[2] + (high[2]+ 0.5)*h << ")" << std::endl;
-
-     }
-    }
-
-    MPI_Barrier(grid_comm);
-
-  }
-
   // time step
   if (grid_comm != MPI_COMM_NULL) {
 
@@ -384,11 +325,16 @@ void yee_updater::run()
       // wait for the E field sends to complete
       recv_E();
 
+      // wait for the DAB sends to complete
+      recv_DAB();
+   
+      // copy in new DAB values
+      copy_DAB();
+
       // update the boundary H fields
       step_outer_H();
 
-      // wait for the DAB sends to complete
-      recv_DAB();
+      
 
       // increment H time
       Htime += dt;
@@ -719,8 +665,8 @@ void yee_updater::calc_params()
 	for (j=1; j<nprocs-1; ++j) {
           // loop over the directions
 	  for (i=0; i<3; ++i) {
-            // if we have points left add one to the current process and shift
-            // the process the coordinates for the processes to the right
+            // if we have points left, add one to the current process and shift
+            // the process coordinates for the processes to the right
 	    if (r[i] > 0) {
 	      if (cart_rank[i] == j) {
 		n[i]++;
@@ -846,7 +792,9 @@ void yee_updater::init_solutions()
   double hloc[3];
 
   // place the source at (0,0,0) plus a small perturbation to decrease the 
-  // chances of coinciding with a grid point
+  // chances of coinciding with a grid point. If the source is on a grid
+  // point there is the possiblity of a division by zero in the solution 
+  // routines
   src_loc[0] = 1.43e-7;
   src_loc[1] = -5.3423e-7;
   src_loc[2] = 9.012e-8;
@@ -855,8 +803,8 @@ void yee_updater::init_solutions()
   hloc[0] = h;
   hloc[1] = h;
   hloc[2] = h;
-  
 
+  // initialize the solution object
   sol_obj = maxwell_solutions::MW_FreeSpace(gamma, tau, eps, mu, src_loc);
   sol_obj.set_grid_spacing(hloc);
 
@@ -965,31 +913,6 @@ void yee_updater::init_DAB()
     //       x   x   x                              |     |     |     |
     //       ---------                              ---x-----x-----x---
     //
-    // We note that if we use the same 2 point overlap, we will need to pass
-    // data left/right, up/down, and diagonally. Visually, this looks like
-    //
-    //            |   |            
-    //         o  o   o  o      Here, the process boundaries are represented
-    //            |   |         by -- or |. Grid points are represented by o, x
-    //       --x--o   x--o--
-    //       
-    //       --o--o   o--o--
-    //            |   |     
-    //         x  o   x  o
-    //            |   | 
-    //
-    // In this case we highlight that the last grid point that can be updated
-    // by the process on the lower left is designated by 'x'. The 'x' on the 
-    // other 3 processes are the locations we need to send the data to. Notice
-    // that this is not the same as the Yee updates because we are using the 
-    // 7-point wave equation stencil here. 
-    //
-    // Instead, we overlap by 3 points. We do this to avoid passing data
-    // diagonally, which should simplify the code somewhat. We note, however,
-    // that we would only need to send the auxilliary variables at 1 point
-    // diagonally, so adding more work due to the overlap to avoid message
-    // passing may not be the most efficient use of resources.
-    //
     // Note that the use of normal and tangential components here is somewhat
     // confusing because it is in reference to the boundaries with neighboring
     // processes, NOT the phyiscal boundary. We consider the direction in which
@@ -1050,12 +973,10 @@ void yee_updater::init_DAB()
 
             // adjust based on field component
             if (m == 1) { // Ey
-              if (MPI_DIR[3] == MPI_PROC_NULL)
                 high[1]--;
               if (MPI_DIR[2] != MPI_PROC_NULL)
                 low[1]--;
             } else if (m == 2) { // Ez
-              if (MPI_DIR[5] == MPI_PROC_NULL)
                 high[2]--;
               if (MPI_DIR[4] != MPI_PROC_NULL)
                 low[2]--;
@@ -1070,12 +991,10 @@ void yee_updater::init_DAB()
               high[0]--;
               low[0]--;
             } else if (m == 1) { // Ey
-              if (MPI_DIR[3] == MPI_PROC_NULL)
                 high[1]--;
               if (MPI_DIR[2] != MPI_PROC_NULL)
                 low[1]--;
             } else if (m == 2) { // Ez
-              if (MPI_DIR[5] == MPI_PROC_NULL)
                 high[2]--;
               if (MPI_DIR[4] != MPI_PROC_NULL)
                 low[2]--;
@@ -1087,12 +1006,10 @@ void yee_updater::init_DAB()
 
             // adjust based on field component
             if (m == 0) { // Ex
-              if (MPI_DIR[1] == MPI_PROC_NULL)
                 high[0]--;
               if (MPI_DIR[0] != MPI_PROC_NULL)
                 low[0]--;
             } else if (m == 2) { // Ez
-              if (MPI_DIR[5] == MPI_PROC_NULL)
                 high[2]--;
               if (MPI_DIR[4] != MPI_PROC_NULL)
                 low[2]--;
@@ -1106,12 +1023,10 @@ void yee_updater::init_DAB()
               high[1]--;
               low[1]--;
             } else if (m == 0) { // Ex
-              if (MPI_DIR[1] == MPI_PROC_NULL)
                 high[0]--;
               if (MPI_DIR[0] != MPI_PROC_NULL)
                 low[0]--;
             } else if (m == 2) { // Ez
-              if (MPI_DIR[5] == MPI_PROC_NULL)
                 high[2]--;
               if (MPI_DIR[4] != MPI_PROC_NULL)
                 low[2]--;
@@ -1122,12 +1037,10 @@ void yee_updater::init_DAB()
 
             // adjust based on field component
             if (m == 0) { // Ex
-              if (MPI_DIR[1] == MPI_PROC_NULL)
                 high[0]--;
               if (MPI_DIR[0] != MPI_PROC_NULL)
                 low[0]--;
             } else if (m == 1) { // Ey
-              if (MPI_DIR[3] == MPI_PROC_NULL)
                 high[1]--;
               if (MPI_DIR[2] != MPI_PROC_NULL)
                 low[1]--;
@@ -1141,12 +1054,10 @@ void yee_updater::init_DAB()
               high[2]--;
               low[2]--;
             } else if (m == 0) { // Ex
-              if (MPI_DIR[1] == MPI_PROC_NULL)
                 high[0]--;
               if (MPI_DIR[0] != MPI_PROC_NULL)
                 low[0]--;
             } else if (m == 1) { // Ey
-              if (MPI_DIR[3] == MPI_PROC_NULL)
                 high[1]--;
               if (MPI_DIR[2] != MPI_PROC_NULL)
                 low[1]--;
@@ -1186,63 +1097,6 @@ void yee_updater::init_DAB()
     DAB_props.at(14) = bound_upd[2].get_num_corners();
 
   }
-
- /*
-  // print out DAB info
-  if (MPI_Gather(DAB_props.data(), 15, MPI_INT, rDAB_props.data(), 15, MPI_INT, 0, grid_comm) != MPI_SUCCESS)
-    std::cerr << "MPI_Gather failed" << std::endl;
-  if (MPI_Gather(DAB_refl.data(), 10, MPI_DOUBLE, rDAB_refl.data(), 10, MPI_DOUBLE, 0, grid_comm) != MPI_SUCCESS)
-    std::cerr << "MPI_Gather failed" << std::endl;
-  if (my_id == 0) {
-
-    std::cout << "Domain width = " << domain_width << std::endl << std::endl;
-    double mem_total = 0;
-
-    for (l=0; l<nprocs_cubed; ++l) {
-
-      int gc[3];
-
-      MPI_Cart_coords(grid_comm, l, 3, gc);
-
-      std::cout << "Process " << l << " with logical coordinates (" << gc[0] << ", "
-		<< gc[1] << ", " << gc[2] << ") for the Ex component" << std::endl;
-      std::cout << "         with a corner at (" << rDAB_refl.at(10*l + 6) << ", "
-		<< rDAB_refl.at(10*l + 7) << ", " << rDAB_refl.at(10*l + 8) << ")" << std::endl;
-
-      std::cout << "  Left side in x:" << std::endl;
-      std::cout << "    recursions      = " << rDAB_props.at(15*l) << std::endl;
-      std::cout << "    reflection coef = " << rDAB_refl.at(10*l) << std::endl;
-      std::cout << "  Right side in x:" << std::endl;
-      std::cout << "    recursions      = " << rDAB_props.at(15*l + 1) << std::endl;
-      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 1) << std::endl;
-      std::cout << "  Left side in y:" << std::endl;
-      std::cout << "    recursions      = " << rDAB_props.at(15*l + 2) << std::endl;
-      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 2) << std::endl;
-      std::cout << "  Right side in y:" << std::endl;
-      std::cout << "    recursions      = " << rDAB_props.at(15*l + 3) << std::endl;
-      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 3) << std::endl;
-      std::cout << "  Left side in z:" << std::endl;
-      std::cout << "    recursions      = " << rDAB_props.at(15*l + 4) << std::endl;
-      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 4) << std::endl;
-      std::cout << "  Right side in z:" << std::endl;
-      std::cout << "    recursions      = " << rDAB_props.at(15*l + 5) << std::endl;
-      std::cout << "    reflection coef = " << rDAB_refl.at(10*l + 5) << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 6) << " Ex faces" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 7) << " Ex edges" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 8) << " Ex corners" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 9) << " Ey faces" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 10) << " Ey edges" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 11) << " Ey corners" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 12) << " Ez faces" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 13) << " Ez edges" << std::endl;
-      std::cout << "  " << rDAB_props.at(15*l + 14) << " Ez corners" << std::endl;
-      std::cout << "  Approx DAB Memory Use = " << rDAB_refl.at(10*l + 9) << " MB" << std::endl;
-      mem_total += rDAB_refl.at(10*l + 9);
-
-    }
-    std::cout << "  Approx Total DAB Memory Use = " << mem_total << " MB" << std::endl;
-  }
-*/
 
   // figure out the message passing configuration
   calc_DAB_send_params();
@@ -1537,12 +1391,10 @@ void yee_updater::step_outer_H()
 void yee_updater::step_DAB()
 {
 
-  int i,j,k,l;
+  int i, j, k, l, m;
   int ind[3];
   int nxm, nym;
   int low_ind[3], high_ind[3];
-  nxm = nx-1;
-  nym = ny-1;
   double t1, t2;
 
   // start timer
@@ -1556,89 +1408,35 @@ void yee_updater::step_DAB()
       // check to see if the current face is of type CRBC
       if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
 
-        // Ex component
-        // get the indices the updater object expects as input from this face.
-        // Note that these values are inclusive
-        bound_upd[0].get_input_extents(l, low_ind, high_ind);
+        // loop over components
+        for (m=0; m<3; ++m) {
 
-        // Because we overlapped the grid the range may extend outside of the 
-        // field arrays. To fix this, we simply change -1 -> 0 in the indexing
-        // if it occurs.
-        for (i=0;i<3; ++i)
-          low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+          // get the indices the updater object expects as input from this face.
+          // Note that these values are inclusive
+          bound_upd[m].get_input_extents(l, low_ind, high_ind);
 
-        // adjust the upper limits to the data extents in the interior
-        high_ind[0] = (high_ind[0] > nx-2) ? nx-2 : high_ind[0];
-        high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
-        high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
+          // Because we overlapped the grid the range may extend outside of the 
+          // field arrays. To fix this, we simply change -1 -> 0 in the indexing
+          // if it occurs.
+          for (i=0; i<3; ++i)
+            low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
+ 
+          // set extents for loops
+          nxm = (m == 0) ? nx-1 : nx;
+          nym = (m == 1) ? ny-1 : ny;
 
-        // copy in the face values to the Ex faces
-        for (k=low_ind[2]; k<=high_ind[2]; ++k) {
-          for (j=low_ind[1]; j<=high_ind[1]; ++j) {
-            for (i=low_ind[0]; i<=high_ind[0]; ++i) {
-              ind[0] = i;
-              ind[1] = j;
-              ind[2] = k;
-              bound_upd[0].load_face_data(l, ind, E[0][i + (j + k*ny)*nxm]);
+          // copy in the face values to the Ex faces
+          for (k=low_ind[2]; k<=high_ind[2]; ++k) {
+            for (j=low_ind[1]; j<=high_ind[1]; ++j) {
+              for (i=low_ind[0]; i<=high_ind[0]; ++i) {
+                ind[0] = i;
+                ind[1] = j;
+                ind[2] = k;
+                bound_upd[m].load_face_data(l, ind, E[m][i + (j + k*nym)*nxm]);
+              }
             }
           }
-        }
-        
-        // Ey component
-        // get the indices the updater object expects as input from this face.
-        // Note that these values are inclusive
-        bound_upd[1].get_input_extents(l, low_ind, high_ind);
-
-        // Because we overlapped the grid the range may extend outside of the 
-        // field arrays. To fix this, we simply change -1 -> 0 in the indexing
-        // if it occurs.
-        for (i=0;i<3; ++i)
-          low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
-
-        // adjust the upper limits to the data extents in the interior
-        high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
-        high_ind[1] = (high_ind[1] > ny-2) ? ny-2 : high_ind[1];
-        high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
-
-        // copy in the face values to the Ex faces
-        for (k=low_ind[2]; k<=high_ind[2]; ++k) {
-          for (j=low_ind[1]; j<=high_ind[1]; ++j) {
-            for (i=low_ind[0]; i<=high_ind[0]; ++i) {
-              ind[0] = i;
-              ind[1] = j;
-              ind[2] = k;
-              bound_upd[1].load_face_data(l, ind, E[1][i + (j + k*nym)*nx]);
-            }
-          }
-        }
-
-        // Ez component
-        // get the indices the updater object expects as input from this face.
-        // Note that these values are inclusive
-        bound_upd[2].get_input_extents(l, low_ind, high_ind);
-
-        // Because we overlapped the grid the range may extend outside of the 
-        // field arrays. To fix this, we simply change -1 -> 0 in the indexing
-        // if it occurs.
-        for (i=0;i<3; ++i)
-          low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
-
-        // adjust the upper limits to the data extents in the interior
-        high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
-        high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
-        high_ind[2] = (high_ind[2] > nz-2) ? nz-2 : high_ind[2];
-
-        // copy in the face values to the Ex faces
-        for (k=low_ind[2]; k<=high_ind[2]; ++k) {
-          for (j=low_ind[1]; j<=high_ind[1]; ++j) {
-            for (i=low_ind[0]; i<=high_ind[0]; ++i) {
-              ind[0] = i;
-              ind[1] = j;
-              ind[2] = k;
-              bound_upd[2].load_face_data(l, ind, E[2][i + (j + k*ny)*nx]);
-            }
-          }
-        }
+        }        
       } // end if crbc
     } // end for 
 
@@ -1646,6 +1444,30 @@ void yee_updater::step_DAB()
     bound_upd[0].compute_updates();
     bound_upd[1].compute_updates();
     bound_upd[2].compute_updates();
+
+  } // end isBoundaryProc
+
+  // stop timer
+  t2 = MPI_Wtime();
+  step_DAB_t += t2-t1;
+}
+
+/*******************************************************************************
+                Function to copy updated DAB values
+*******************************************************************************/
+void yee_updater::copy_DAB()
+{
+
+  int i, j, k, l, m;
+  int ind[3];
+  int nxm, nym;
+  int low_ind[3], high_ind[3];
+  double t1, t2;
+
+  // start timer
+  t1 = MPI_Wtime();
+
+  if (isBoundaryProc) {
 
     // now copy the updated values from the DAB back into the fields. We only
     // need to copy the tangential fields because the normal components should
@@ -1657,23 +1479,26 @@ void yee_updater::step_DAB()
       // check to see if the current face is of type CRBC
       if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
 
-        // Ex component
-        if (l / 2 != 0) { // skip faces with x-normal
+        // loop over components
+        for (m=0; m<3; ++m) {
+
+          // skip normal component
+          if (l/2 == m)
+            continue;
 
           // get the indices the updater object expects to output from this face.
           // Note that these values are inclusive
-          bound_upd[0].get_output_extents(l, low_ind, high_ind);
+          bound_upd[m].get_output_extents(l, low_ind, high_ind);
 
           // Because we overlapped the grid the range may extend outside of the 
           // field arrays. To fix this, we simply change -1 -> 0 in the indexing
           // if it occurs.
-          for (i=0;i<3; ++i)
+          for (i=0; i<3; ++i)
             low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
 
-          // adjust the upper limits to the data extents in the interior
-          high_ind[0] = (high_ind[0] > nx-2) ? nx-2 : high_ind[0];
-          high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
-          high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
+          // set extents for loops
+          nxm = (m == 0) ? nx-1 : nx;
+          nym = (m == 1) ? ny-1 : ny;
 
           // copy in the face values to the Ex faces
           for (k=low_ind[2]; k<=high_ind[2]; ++k) {
@@ -1682,69 +1507,7 @@ void yee_updater::step_DAB()
                 ind[0] = i;
                 ind[1] = j;
                 ind[2] = k;
-                E[0][i + (j + k*ny)*nxm] = bound_upd[0].get_new_face_vals(l, ind);
-              }
-            }
-          }
-        }
-        
-        // Ey component
-        if (l / 2 != 1) { // skip faces with y-normal
-
-          // get the indices the updater object expects as output from this face.
-          // Note that these values are inclusive
-          bound_upd[1].get_output_extents(l, low_ind, high_ind);
-
-          // Because we overlapped the grid the range may extend outside of the 
-          // field arrays. To fix this, we simply change -1 -> 0 in the indexing
-          // if it occurs.
-          for (i=0;i<3; ++i)
-            low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
-
-          // adjust the upper limits to the data extents in the interior
-          high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
-          high_ind[1] = (high_ind[1] > ny-2) ? ny-2 : high_ind[1];
-          high_ind[2] = (high_ind[2] > nz-1) ? nz-1 : high_ind[2];
-
-          // copy in the face values to the Ex faces
-          for (k=low_ind[2]; k<=high_ind[2]; ++k) {
-            for (j=low_ind[1]; j<=high_ind[1]; ++j) {
-              for (i=low_ind[0]; i<=high_ind[0]; ++i) {
-                ind[0] = i;
-                ind[1] = j;
-                ind[2] = k;
-                E[1][i + (j + k*nym)*nx] = bound_upd[1].get_new_face_vals(l, ind);
-              }
-            }
-          }
-        }
-
-        // Ez component
-        if (l / 2 != 2) { // skip faces with z-normal
-
-          // get the indices the updater object expects as output from this face.
-          // Note that these values are inclusive
-          bound_upd[2].get_output_extents(l, low_ind, high_ind);
-
-          // Because we overlapped the grid the range may extend outside of the 
-          // field arrays. To fix this, we simply change -1 -> 0 in the indexing
-          // if it occurs.
-          for (i=0;i<3; ++i)
-            low_ind[i] = (low_ind[i] == -1) ? 0 : low_ind[i];
-
-          // adjust the upper limits to the data extents in the interior
-          high_ind[0] = (high_ind[0] > nx-1) ? nx-1 : high_ind[0];
-          high_ind[1] = (high_ind[1] > ny-1) ? ny-1 : high_ind[1];
-          high_ind[2] = (high_ind[2] > nz-2) ? nz-2 : high_ind[2];
-
-          // copy in the face values to the Ex faces
-          for (k=low_ind[2]; k<=high_ind[2]; ++k) {
-            for (j=low_ind[1]; j<=high_ind[1]; ++j) {
-              for (i=low_ind[0]; i<=high_ind[0]; ++i) {
-                ind[0] = i;
-                ind[1] = j;
-                ind[2] = k;
-                E[2][i + (j + k*ny)*nx] = bound_upd[2].get_new_face_vals(l, ind);
+                E[m][i + (j + k*nym)*nxm] = bound_upd[m].get_new_face_vals(l, ind);
               }
             }
           }
@@ -1757,7 +1520,6 @@ void yee_updater::step_DAB()
   t2 = MPI_Wtime();
   step_DAB_t += t2-t1;
 }
-
 
 /*******************************************************************************
                 Function to get DAB values 
@@ -1942,27 +1704,7 @@ void yee_updater::calc_DAB_send_params()
   // finally change the directions from local side indices to the MPI ranks in 
   // the appropriate direction
   for (l=0; l<send_dirs.size(); ++l) {
-    switch (send_dirs[l]) {
-            
-      case 0: // MPI_DIR[0]
-        send_mpi_dirs.push_back(MPI_DIR[0]);
-        break;
-      case 1: // MPI_DIR[1]
-        send_mpi_dirs.push_back(MPI_DIR[1]);
-        break;
-      case 2: // MPI_DIR[2]
-        send_mpi_dirs.push_back(MPI_DIR[2]);
-        break;
-      case 3: // MPI_DIR[3]
-        send_mpi_dirs.push_back(MPI_DIR[3]);
-        break;
-      case 4: // MPI_DIR[4]
-        send_mpi_dirs.push_back(MPI_DIR[4]);
-        break;
-      case 5: // MPI_DIR[5]
-        send_mpi_dirs.push_back(MPI_DIR[5]);
-        break;
-    }
+    send_mpi_dirs.push_back(MPI_DIR[send_dirs[l]]);
   }
 }
 
@@ -1977,14 +1719,9 @@ void yee_updater::send_DAB()
   int low[3], high[3], plow[2], phigh[2];
   double t1, t2;
 
-  static int flag;
-
   // start timer
   t1 = MPI_Wtime();
 
-  for (int k=0; k<8; k++) {
- 
-  if (my_id == k)
   if (isBoundaryProc) {
 
     // loop over the directions we need to send
@@ -2015,35 +1752,15 @@ void yee_updater::send_DAB()
           // the low or high extents. Here, we also adjust for the overlap
           // based on the component
           if (side % 2 == 0) { // left side in the appropriate direction
-            high[side / 2] = (side / 2 == i) ? ++ ++low[side / 2] : ++low[side / 2];
+            high[side / 2] = (side / 2 == i) ? ++low[side / 2] : ++low[side / 2];
           } else { // right side in the appropriate direction
-            low[side / 2] = (side / 2 == i) ? -- --high[side / 2] : --high[side / 2];       
+            low[side / 2] = (side / 2 == i) ? --high[side / 2] : --high[side / 2];       
           }
-
-          // adjust to account for the grid overlap
-          
 
           // copy data auxilliary data into the send buffer
           plow[0] = 0; // auxilliary index bounds
           phigh[0] = bound_upd[i].get_num_recursions(sidea);
           get_dab_vals_loop(DAB_sbuf[side], bound_upd[i], sidea, low, high, plow, phigh);
-
-          if (flag == 0) {
-             
-            std::cout << "    id = " << my_id << " side = " << side;
-            if (i == 0) {
-              std::cout << " Ex DAB send";
-            } else if (i == 1) {
-              std::cout << " Ey DAB send";
-            } else {
-              std::cout << " Ez DAB send";
-            }
-           
-            std::cout << " coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
-              << " x (" << coord[1] + (low[1]+ 0.5)*h << ", " << coord[1] + (high[1]+ 0.5)*h << ")" 
-              << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
-
-          }
 
         } // loop over components
 
@@ -2066,9 +1783,9 @@ void yee_updater::send_DAB()
           // extents we need to modify and side % 2 tells us if we need to modify
           // the low or high extents
           if (side % 2 == 0) { // left side in the appropriate direction
-            high[side / 2] = (side / 2 == i) ? ++ ++low[side / 2] : ++low[side / 2];
+            high[side / 2] = (side / 2 == i) ?  ++low[side / 2] : ++low[side / 2];
           } else { // right side in the appropriate direction
-            low[side / 2] = (side / 2 == i) ? -- --high[side / 2] : --high[side / 2];       
+            low[side / 2] = (side / 2 == i) ?  --high[side / 2] : --high[side / 2];       
           }
 
           // the true at the end tells the function plow, phigh are arrays of len 2
@@ -2106,12 +1823,6 @@ void yee_updater::send_DAB()
 
   } // end if boundary proc
 
-  MPI_Barrier(grid_comm);
- 
-  }
-
-  flag++;
-  
   // stop timer
   t2 = MPI_Wtime();
   send_DAB_t += t2-t1;
@@ -2141,14 +1852,9 @@ void yee_updater::recv_DAB()
   DAB_recv_req.clear();
 
   // copy the values from the buffers
-    static int flag;
-
   // start timer
   t1 = MPI_Wtime();
 
-  for (int k=0; k<8; k++) {
- 
-  if (my_id == k)
   if (isBoundaryProc) {
 
     // loop over the directions we need to send
@@ -2186,23 +1892,6 @@ void yee_updater::recv_DAB()
           phigh[0] = bound_upd[i].get_num_recursions(sidea);
           set_dab_vals_loop(DAB_rbuf[side], bound_upd[i], count, sidea, low, high, plow, phigh);
 
-          if (flag == 0) {
-             
-            std::cout << "    id = " << my_id << " side = " << side;
-            if (i == 0) {
-              std::cout << " Ex DAB recv";
-            } else if (i == 1) {
-              std::cout << " Ey DAB recv";
-            } else {
-              std::cout << " Ez DAB recv";
-            }
-
-            std::cout << " coord (" << coord[0] + (low[0] )*h << ", " << coord[0] + (high[0] )*h << ")"
-              << " x (" << coord[1] + (low[1]+ 0.5)*h << ", " << coord[1] + (high[1]+ 0.5)*h << ")" 
-              << " x (" << coord[2] + low[2]*h<< ", " << coord[2] + high[2]*h << ")" << std::endl;
-
-          }
-           
         }
 
       } // end loop over sides in the current direction
@@ -2238,12 +1927,6 @@ void yee_updater::recv_DAB()
     } // end loop over send directions
 
   } // end if boundary proc
-
-  MPI_Barrier(grid_comm);
- 
-  }
-
-  flag++;
 
   // make sure all the sends have completed
   if (MPI_Waitall(DAB_send_req.size(), DAB_send_req.data(), MPI_STATUSES_IGNORE) != MPI_SUCCESS)
