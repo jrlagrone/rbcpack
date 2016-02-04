@@ -115,6 +115,8 @@ private:
   std::vector<double> E_rbuf[6];
   std::vector<double> DAB_sbuf[6];
   std::vector<double> DAB_rbuf[6];
+  std::vector<double> DAB_corner_sbuf[12];
+  std::vector<double> DAB_corner_rbuf[12];
 
   double eps, mu, gamma, tau, io_t, c;
   double T, dt, h, Etime, Htime;
@@ -131,7 +133,8 @@ private:
   crbc::BoundaryProperties::Boundary procBounds[6];
   int MPI_DIR[6];
   int my_id, cart_rank[3];
-  std::vector<int> send_dirs, send_mpi_dirs, send_sides[4];
+  std::vector<int> send_dirs, send_mpi_dirs, send_sides[4], corner_mpi_dirs[12];
+  std::array<int, 3> send_corners[12];
   crbc::CrbcUpdates<3, double, int> bound_upd[3];
   MPI_Comm grid_comm, glob_comm;
   std::vector<MPI_Request> send_req, recv_req;

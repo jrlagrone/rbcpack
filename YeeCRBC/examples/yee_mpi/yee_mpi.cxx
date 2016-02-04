@@ -285,7 +285,7 @@ void yee_updater::run()
       // generate output
       if (tstep % tskip == 0) {
 
-        writeExField(count++);
+        //writeExField(count++);
 
         // calculate error
 	loc_err = calc_error();
@@ -308,8 +308,8 @@ void yee_updater::run()
       step_E();
 
       // Send the E fields
-      send_E();
-     
+      send_E(); 
+
       // update the DAB
       step_DAB();
 
@@ -327,17 +327,17 @@ void yee_updater::run()
 
       // wait for the DAB sends to complete
       recv_DAB();
-   
-      // copy in new DAB values
+
+      // get the updated boundary values from the DAB updaters
       copy_DAB();
 
       // update the boundary H fields
       step_outer_H();
 
-      
-
       // increment H time
       Htime += dt;
+
+      MPI_Barrier(grid_comm);
 
     } // end time stepping
 
@@ -906,12 +906,12 @@ void yee_updater::init_DAB()
     // points for tangential components, so the grid looks like
     //
     // Tangential components            Normal Components
-    //   ---------                      ---x-----x-----x--- 
-    //   x   x   x                      |     |     |     |
-    //   ---------                      ---x-----x-----x---
-    //       ---------                              ---x-----x-----x---
+    //   --------                    ---x-----x-----x--- 
+    //   x   x   x                      |     |     |    
+    //   --------                    ---x-----x-----x---
+    //       --------                            ---x-----x-----x---
     //       x   x   x                              |     |     |     |
-    //       ---------                              ---x-----x-----x---
+    //       --------                            ---x-----x-----x---
     //
     // Note that the use of normal and tangential components here is somewhat
     // confusing because it is in reference to the boundaries with neighboring
@@ -1642,7 +1642,9 @@ void yee_updater::calc_DAB_send_params()
   // we are assuming each direction has the same number of processes abd we do 
   // not need to pass any information if we only have 1 process.
 
-  unsigned int l, m, tang_sides[4];
+  unsigned int l, m;
+  int tang_sides[4], diag_coords[3], diag_rank;
+  std::array<int, 2> corner_pairs;
 
   // first identify the directions that we need to send
   for (l=0; l<6; ++l) { // loop over sides
@@ -1706,6 +1708,104 @@ void yee_updater::calc_DAB_send_params()
   for (l=0; l<send_dirs.size(); ++l) {
     send_mpi_dirs.push_back(MPI_DIR[send_dirs[l]]);
   }
+
+  // We note that if we use the same 2 point overlap, we will need to pass
+  // data left/right, up/down, and diagonally. Visually, this looks like
+  //
+  //            |   |            
+  //         o  o   o  o      Here, the process boundaries are represented
+  //            |   |         by -- or |. Grid points are represented by o, x
+  //       --x--o   x--o--
+  //       
+  //       --o--o   o--o--
+  //            |   |     
+  //         x  o   x  o
+  //            |   | 
+  // We note that we don't have to due this for the Yee values because the 
+  // data configuration is slightly different depending on which direction we
+  // send, but the DAB uses the 7-point wave stencil ...
+  //
+  // We're ordering the possible corners in a standard way because this makes it
+  // easier to keep track of things when we're actually doing the message 
+  // passing. The ordering we are using is 
+  //   0)  CRBC side = 0 or 1 (x normal), tang. sides 2, 4 (South and Down)
+  //   1)  CRBC side = 0 or 1 (x normal), tang. sides 2, 5 (South and Up)
+  //   2)  CRBC side = 0 or 1 (x normal), tang. sides 3, 4 (North and Down)
+  //   3)  CRBC side = 0 or 1 (x normal), tang. sides 3, 5 (North and Up)
+  //   4)  CRBC side = 2 or 3 (y normal), tang. sides 0, 4 (West and Down)
+  //   5)  CRBC side = 2 or 3 (y normal), tang. sides 0, 5 (West and Up)
+  //   6)  CRBC side = 2 or 3 (y normal), tang. sides 1, 4 (East and Down)
+  //   7)  CRBC side = 2 or 3 (y normal), tang. sides 1, 5 (East and Up)
+  //   8)  CRBC side = 4 or 5 (z normal), tang. sides 0, 2 (West and South)
+  //   9)  CRBC side = 4 or 5 (z normal), tang. sides 0, 3 (West and North)
+  //  10)  CRBC side = 4 or 5 (z normal), tang. sides 1, 2 (East and South)
+  //  11)  CRBC side = 4 or 5 (z normal), tang. sides 1, 3 (East and North)
+  //
+  // Note that this does not cover all the cases for a generic implementation
+  // because we can not, e.g., have 2 parallel CRBC sides on the same process
+  // in the current configuration.
+  //
+  // Start by checking for perpindicular sends from the same side
+  for (l=0; l<6; ++l) { // loop over sides
+    if (procBounds[l] == crbc::BoundaryProperties::CRBC) {
+
+      switch (l / 2) {
+
+        case 0: // outward normal is +/-x
+          tang_sides[0] = 2; // left y
+          tang_sides[1] = 3; // right y
+          tang_sides[2] = 4; // left z
+          tang_sides[3] = 5; // right z
+          break;
+        case 1: // outward normal is +/-y
+          tang_sides[0] = 0; // left x
+          tang_sides[1] = 1; // right x
+          tang_sides[2] = 4; // left z
+          tang_sides[3] = 5; // right z
+          break;
+        case 2: // outward normal is +/-z
+          tang_sides[0] = 0; // left x
+          tang_sides[1] = 1; // right x
+          tang_sides[2] = 2; // left y
+          tang_sides[3] = 3; // left z
+          break;
+        default: // shouldn't happen
+          for (m=0; m<4; ++m)
+            tang_sides[m] = -1;
+          std::cerr << "invalid side" << std::endl;
+          break;
+      }
+
+      for (m=0; m<4; ++m) { // loop tangential sides
+
+        // this checks the pairs (0,2), (0,3), (1,2), (1,3) of tangential sides
+        if ((procBounds[tang_sides[m/2]] == crbc::BoundaryProperties::NONE) &&
+            (procBounds[tang_sides[2+(m%2)]] == crbc::BoundaryProperties::NONE)) {
+
+          corner_pairs = {tang_sides[m/2], tang_sides[2+(m%2)]};
+          send_corners[4*(l/2) + m] = {(int) l, tang_sides[m/2], tang_sides[2+(m%2)]};
+
+          // now figure out the mpi rank of the destination
+          for (int i=0; i<3; ++i)
+            diag_coords[i] = cart_rank[i];
+
+          // figure out the destination coords by adding +-1 to the coordinates
+          // of the current process in the appropriate dimensions
+          diag_coords[corner_pairs[0]/2] = (corner_pairs[0]%2 == 0) ? \
+            diag_coords[corner_pairs[0]/2]-1 : diag_coords[corner_pairs[0]/2]+1;
+          diag_coords[corner_pairs[1]/2] = (corner_pairs[1]%2 == 0) ? \
+            diag_coords[corner_pairs[1]/2]-1 : diag_coords[corner_pairs[1]/2]+1;
+         
+          if (MPI_Cart_rank(grid_comm, diag_coords, &diag_rank) != MPI_SUCCESS)
+            std::cerr << "MPI_Cart_rank failed" << std::endl;
+
+          // save rank
+          corner_mpi_dirs[4*(l/2) + m].push_back(diag_rank);
+        }
+      }
+    } 
+  }
+  
 }
 
 /*******************************************************************************
@@ -1714,7 +1814,7 @@ void yee_updater::calc_DAB_send_params()
 void yee_updater::send_DAB()
 {
 
-  unsigned int i,l,m, side, sidea;
+  unsigned int i,l,m, side, sidea, sideb;
   int edge;
   int low[3], high[3], plow[2], phigh[2];
   double t1, t2;
@@ -1821,6 +1921,78 @@ void yee_updater::send_DAB()
 
     } // end loop over send directions
 
+    // Finally send anything diagonally that we need to
+    // loop over the sides
+    for (l=0; l<12; ++l) {
+
+      // loop over directions we need to send on the current side
+      for (m=0; m<corner_mpi_dirs[l].size(); ++m) { // this should either be 1 or 0
+
+        // clear the buffers for this direction
+        DAB_corner_sbuf[l].clear();
+        DAB_corner_rbuf[l].clear();
+
+        // loop over the components
+        for (i=0; i<3; ++i) {
+
+          // get the two send directions and the CRBC face
+          side = send_corners[l][0]; // crbc/dab face
+          sidea = send_corners[l][1]; // send direction 1
+          sideb = send_corners[l][2]; // send direction 2
+
+          // get data extents for current component
+          // This gets us the indices for all the points on the plane
+          // parallel to the phyiscal boundary
+          bound_upd[i].get_output_extents(side, low, high);
+
+          // now we need to restrict to second to last line of points parallel to 
+          // the boundary we are sending. side / 2 gives us the component of the
+          // extents we need to modify and side % 2 tells us if we need to modify
+          // the low or high extents. Here, we also adjust for the overlap
+          // based on the component
+          if (sidea % 2 == 0) { // left side in the appropriate direction
+            high[sidea / 2] = ++low[sidea / 2];
+          } else { // right side in the appropriate direction
+            low[sidea / 2] = --high[sidea / 2];
+          }
+          if (sideb % 2 == 0) { // left side in the appropriate direction
+            high[sideb / 2] = ++low[sideb / 2];
+          } else { // right side in the appropriate direction
+            low[sideb / 2] = --high[sideb / 2];
+          }
+
+          // copy data auxilliary data into the send buffer
+          plow[0] = 0; // auxilliary index bounds
+          phigh[0] = bound_upd[i].get_num_recursions(side);
+          get_dab_vals_loop(DAB_corner_sbuf[l], bound_upd[i], side, low, high, plow, phigh);
+
+        } // loop over components
+
+        // now actually send the data. 
+
+        // create and save requests
+        MPI_Request sreq, rreq;
+
+        DAB_send_req.push_back(sreq);
+        DAB_recv_req.push_back(rreq);
+
+        // Send --- we use a tag of 1 for DAB send and 0 for E-field sends
+        if (MPI_Isend(DAB_corner_sbuf[l].data(), DAB_corner_sbuf[l].size(), MPI_DOUBLE, \
+            corner_mpi_dirs[l][m], 2, grid_comm, &DAB_send_req.back()) != MPI_SUCCESS)
+                std::cerr << "MPI_Isend failed" << std::endl;
+
+        // make sure the recieve buffer is large enough
+        if (DAB_corner_rbuf[l].size() < DAB_corner_sbuf[l].size())
+          DAB_corner_rbuf[l].assign(DAB_corner_sbuf[l].size(), 0.0);
+
+        // Recieve
+        if (MPI_Irecv(DAB_corner_rbuf[l].data(), DAB_corner_sbuf[l].size(), MPI_DOUBLE, 
+            corner_mpi_dirs[l][m], 2, grid_comm, &DAB_recv_req.back()) != MPI_SUCCESS)
+                std::cerr << "MPI_Isend failed" << std::endl;
+
+      } // end loop over directions we need to send on the current side
+    }
+
   } // end if boundary proc
 
   // stop timer
@@ -1837,7 +2009,7 @@ void yee_updater::recv_DAB()
   // note the recieve directions are the same as the send directions, so we do
   // almost exactly the same thing here as in send_DAB() except we copy from the
   // buffers to the DAB.
-  unsigned int i,l,m, side, edge, sidea;
+  unsigned int i,l,m, side, edge, sidea, sideb;
   int count;
   int low[3], high[3], plow[2], phigh[2];
   double t1, t2;
@@ -1926,6 +2098,55 @@ void yee_updater::recv_DAB()
 
     } // end loop over send directions
 
+    // Finally get anything diagonally that we need
+    // loop over the sides
+    for (l=0; l<12; ++l) {
+
+      // loop over directions we need to send on the current side
+      for (m=0; m<corner_mpi_dirs[l].size(); ++m) {
+
+        // used for indexing
+        count = 0;
+
+        // loop over the components
+        for (i=0; i<3; ++i) {
+
+          // get the two send directions and the CRBC face
+          side = send_corners[l][0]; // crbc/dab face
+          sidea = send_corners[l][1]; // send direction 1
+          sideb = send_corners[l][2]; // send direction 2
+
+          // get data extents for current component
+          // This gets us the indices for all the points on the plane
+          // parallel to the phyiscal boundary
+          bound_upd[i].get_output_extents(side, low, high);
+
+          // now we need to restrict to second to last line of points parallel to 
+          // the boundary we are sending. side / 2 gives us the component of the
+          // extents we need to modify and side % 2 tells us if we need to modify
+          // the low or high extents. Here, we also adjust for the overlap
+          // based on the component
+          if (sidea % 2 == 0) { // left side in the appropriate direction
+            high[sidea / 2] = low[sidea / 2];
+          } else { // right side in the appropriate direction
+            low[sidea / 2] = high[sidea / 2];       
+          }
+          if (sideb % 2 == 0) { // left side in the appropriate direction
+            high[sideb / 2] = low[sideb / 2];
+          } else { // right side in the appropriate direction
+            low[sideb / 2] = high[sideb / 2];       
+          }
+
+          // copy data auxilliary data into the send buffer
+          plow[0] = 0; // auxilliary index bounds
+          phigh[0] = bound_upd[i].get_num_recursions(side);
+          set_dab_vals_loop(DAB_corner_rbuf[l], bound_upd[i], count, side, low, high, plow, phigh);
+
+        } // loop over components
+
+      } // end loop over directions we need to send on the current side
+    }
+
   } // end if boundary proc
 
   // make sure all the sends have completed
@@ -1933,7 +2154,7 @@ void yee_updater::recv_DAB()
       std::cerr << "MPI_Waitall failed (DAB_send_req)" << std::endl;
 
   DAB_send_req.clear();
-  
+
   // stop timer
   t2 = MPI_Wtime();
   recv_DAB_t += t2-t1;
@@ -2255,7 +2476,7 @@ void yee_updater::load_initial_conds() {
   sol_obj.set_derivative_method(maxwell_solutions::FD_YEE);
 
   #if USE_OPENMP
-  #pragma omp parallel default(shared) private(i,j,k,x,sol_obj)
+  #pragma omp parallel default(shared) private(i,j,k,x)
   {
   #endif
 
@@ -2523,7 +2744,7 @@ double yee_updater::calc_error()
   sol_obj.set_derivative_method(maxwell_solutions::EXACT);
 
   #if USE_OPENMP
-  #pragma omp parallel default(shared) private(i,j,k,x,sol,upd_obj)
+  #pragma omp parallel default(shared) private(i,j,k,x,sol)
   {
   #endif
 
