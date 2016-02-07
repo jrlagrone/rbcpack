@@ -230,8 +230,6 @@ private:
   /// calculate the error at the current time
   double calc_error();
 
-  void writeExField(int id);
-                
 };
 
 #endif // CRBC_YEE_MPI_H_
