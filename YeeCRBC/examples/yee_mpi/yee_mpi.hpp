@@ -113,6 +113,8 @@ private:
   // storage for mpi messages
   std::vector<double> E_sbuf[6];
   std::vector<double> E_rbuf[6];
+  std::vector<double> E_edge_sbuf[12];
+  std::vector<double> E_edge_rbuf[12];
   std::vector<double> DAB_sbuf[6];
   std::vector<double> DAB_rbuf[6];
   std::vector<double> DAB_corner_sbuf[12];
@@ -133,8 +135,10 @@ private:
   crbc::BoundaryProperties::Boundary procBounds[6];
   int MPI_DIR[6];
   int my_id, cart_rank[3];
+  std::vector<int> MPI_EDGE_DIR;
   std::vector<int> send_dirs, send_mpi_dirs, send_sides[4], corner_mpi_dirs[12];
   std::array<int, 3> send_corners[12];
+  std::vector< std::array<int, 2> > send_edges;
   crbc::CrbcUpdates<3, double, int> bound_upd[3];
   MPI_Comm grid_comm, glob_comm;
   std::vector<MPI_Request> send_req, recv_req;

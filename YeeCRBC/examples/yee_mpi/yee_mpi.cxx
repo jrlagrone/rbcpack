@@ -56,53 +56,171 @@
 #include <stdlib.h>   
 
 
+// this shouldn't be used with anything even remotely large ... it will 
+// run out of memory because we pass all the data to a single process 
+// for output
 void yee_updater::writeExField(int id) {
 
-    int i, j, k, npts, cells;
+    int i, j, k, is, js, ks, npts, cells, n, cc[3];
 
-    char fileBaseName[100];   
-    sprintf(fileBaseName, "Ex_Field_%05d.%05d.vtk", my_id, id);   
+    std::vector<double> recv[125]; // won't work for more than 125 procs 
+    std::vector<int> extents, recv_ext;
 
-    // open the file and write the VTK header information
-    FILE *f = fopen(fileBaseName, "w");
-    fprintf(f, "# vtk DataFile Version 3.0\n");
-    fprintf(f, "vtk output\n");
-    fprintf(f, "ASCII\n");
-    fprintf(f, "DATASET RECTILINEAR_GRID\n");
+    // figure out where the indexing starts in the case of shared points
+    // we'll assume the process to the "left" owns any duplicate points
+    is = (procBounds[0] == crbc::BoundaryProperties::NONE) ? 1 : 0; // Ex is normal
+    js = (procBounds[2] == crbc::BoundaryProperties::NONE) ? 2 : 0;
+    ks = (procBounds[4] == crbc::BoundaryProperties::NONE) ? 2 : 0;
 
-    // set the dimensions
-    fprintf(f, "DIMENSIONS %i %i %i\n", nx-1, ny, nz);
+    // save local extents
+    extents.push_back(is);
+    extents.push_back(nx-1);
+    extents.push_back(js);
+    extents.push_back(ny);
+    extents.push_back(ks);
+    extents.push_back(nz);
 
-    // save the coordinates
-    fprintf(f, "X_COORDINATES %i double \n", nx-1);
-    for (i=0; i < nx-1; ++i)
-      fprintf(f, "%f\n", coord[0] + h/2.0 + i*h);
+    recv_ext.assign(nprocs_cubed*6, 0);
 
-    fprintf(f, "Y_COORDINATES %i double \n", ny);
-    for (j=0; j < ny; ++j)
-      fprintf(f, "%f\n", coord[1] + j*h);
+    // send extents
+    MPI_Gather(extents.data(),6, MPI_INT, recv_ext.data(), 6, MPI_INT, 0, grid_comm);
 
-    fprintf(f, "Z_COORDINATES %i double \n", nz);
-    for (k=0; k < nz; ++k)
-      fprintf(f, "%f\n", coord[2] + k*h);
+    // send all the data
+    for (i=1; i<nprocs_cubed; ++i) {
+      if (my_id == i) {
+        MPI_Send(E[0].data(), E[0].size(), MPI_DOUBLE, 0, 5, grid_comm);
+      }
 
-    // set up a cell and field
-    npts = (nx-1) * ny * nz;
-    cells = (nx-2) * (ny-1) * (nz-1);
-    fprintf(f, "CELL_DATA %i\n", cells);
-    fprintf(f, "POINT_DATA %i\n", npts);
-    fprintf(f, "FIELD FieldData 1\n");
-    fprintf(f, "Ex 1 %i double\n", npts);
+      if (my_id == 0) {
+        recv[i].assign(maxn*maxn*maxn,0.0);
+        MPI_Recv(recv[i].data(), maxn*maxn*maxn, MPI_DOUBLE, i, 5, grid_comm, MPI_STATUS_IGNORE);
+      }
+    }
+     
+    MPI_Barrier(grid_comm);
 
-    // now write out the data
-    for (k=0; k < nz; ++k) 
-      for (j=0; j < ny; ++j)
-	for (i=0; i < nx-1; ++i)
-	  fprintf(f, "%f\n", E[0][i + (j + k*ny)*(nx-1)]);
-  	
+    if (my_id == 0) {
 
-    // close the file
-    fclose(f);
+      recv[0] = E[0];
+
+      n = domain_width/h + 1;
+
+      char fileBaseName[100];   
+      sprintf(fileBaseName, "Ex_Field%d_%05d.vtk", nprocs, id);   
+
+      // open the file and write the VTK header information
+      FILE *f = fopen(fileBaseName, "w");
+      fprintf(f, "# vtk DataFile Version 3.0\n");
+      fprintf(f, "vtk output\n");
+      fprintf(f, "ASCII\n");
+      fprintf(f, "DATASET RECTILINEAR_GRID\n");
+
+      // set the dimensions
+      fprintf(f, "DIMENSIONS %i %i %i\n", n-1, n, n);
+
+      // save the coordinates
+      fprintf(f, "X_COORDINATES %i double \n", n-1);
+      for (i=0; i < n-1; ++i)
+        fprintf(f, "%f\n", coord[0] + h/2.0 + i*h);
+
+      fprintf(f, "Y_COORDINATES %i double \n", n);
+      for (j=0; j < n; ++j)
+        fprintf(f, "%f\n", coord[1] + j*h);
+
+      fprintf(f, "Z_COORDINATES %i double \n", n);
+      for (k=0; k < n; ++k)
+        fprintf(f, "%f\n", coord[2] + k*h);
+
+      // set up a cell and field
+      npts = (n-1) * (n) * (n);
+      cells = (n-2) * (n-1) * (n-1);
+      fprintf(f, "CELL_DATA %i\n", cells);
+      fprintf(f, "POINT_DATA %i\n", npts);
+      fprintf(f, "FIELD FieldData 1\n");
+      fprintf(f, "Ex%d 1 %i double\n", nprocs, npts);
+
+      // now write out the data
+
+      is = js = ks = 0;
+      i = j = k = 0;
+
+      cc[0] = cc[1] = cc[2] = 0;
+     
+      // get the rank of current process
+      int rank;
+      MPI_Cart_rank(grid_comm, cc, &rank);
+
+      while (ks < nprocs) {
+
+        cc[0] = is;
+        cc[1] = js;
+        cc[2] = ks;
+        MPI_Cart_rank(grid_comm, cc, &rank);
+        j = recv_ext[6*rank+2];
+
+        while (js < nprocs) {
+
+          while (is < nprocs) {
+
+            // get rank of current proc
+            cc[0] = is;
+            cc[1] = js;
+            cc[2] = ks;
+            MPI_Cart_rank(grid_comm, cc, &rank);
+
+            // write out all the values in the x direction for the current
+            // y and z values
+            for (i=recv_ext[6*rank]; i<recv_ext[6*rank+1]; ++i) {
+              fprintf(f, "%f\n", recv[rank][i + (j + k*recv_ext[6*rank+3])*(recv_ext[6*rank+1])]);
+
+            }
+            // shift to next process in the x direction
+            is++;
+          }
+
+          // increment j
+          j++;
+          is = 0;
+        
+          // shift process in y
+          if (j == recv_ext[6*rank+3]) {
+
+            js++;
+            if (js < nprocs) { // so cart_rank doesn't fail
+
+              cc[0] = is;
+              cc[1] = js;
+              cc[2] = ks;
+              MPI_Cart_rank(grid_comm, cc, &rank);
+              j = recv_ext[6*rank+2];
+            }
+          }
+        }
+
+        // increment k
+        k++;
+        is = js = 0;
+        
+        // shift process in z
+        if (k == recv_ext[6*rank+5]) {
+
+          ks++;
+
+          if (ks < nprocs) { // so cart_rank doesn't fail
+
+            cc[0] = is;
+            cc[1] = js;
+            cc[2] = ks;
+            MPI_Cart_rank(grid_comm, cc, &rank);
+            k = recv_ext[6*rank+4];
+          }
+        }
+      }
+      
+      // close the file
+      fclose(f);
+
+    }
   }
 
 /*******************************************************************************
@@ -285,7 +403,7 @@ void yee_updater::run()
       // generate output
       if (tstep % tskip == 0) {
 
-        //writeExField(count++);
+        writeExField(count++);
 
         // calculate error
 	loc_err = calc_error();
@@ -710,7 +828,7 @@ void yee_updater::calc_params()
                function to create MPI communicator
 *******************************************************************************/
 void yee_updater::create_mpi_comm(MPI_Comm comm) {
-  int periods[3];
+  int periods[3], i, j, diag_coords[3], diag_rank;
   periods[0] = 0; // not periodic
   periods[1] = 0;
   periods[2] = 0;
@@ -742,6 +860,7 @@ void yee_updater::create_mpi_comm(MPI_Comm comm) {
   if (grid_comm != MPI_COMM_NULL) {
     if (MPI_Comm_rank(grid_comm, &my_id) != MPI_SUCCESS)
       std::cerr << "MPI_Comm_rank failed" << std::endl;
+
     if (MPI_Cart_coords(grid_comm, my_id, 3, cart_rank) != MPI_SUCCESS)
       std::cerr << "MPI_Cart_coords failed" << std::endl;
 
@@ -769,11 +888,43 @@ void yee_updater::create_mpi_comm(MPI_Comm comm) {
 
   // label the boundaries. Use type NONE for interior sides and CRBC for the
   // exterior boundaries. To do a wave guide, e.g., one might change the type
-  // to PEC on the appropriate sides
+  // to DIR on the appropriate sides
   for (int i=0; i<6; ++i) {
     procBounds[i] = crbc::BoundaryProperties::NONE;
     if ((grid_comm != MPI_COMM_NULL) && (MPI_DIR[i] == MPI_PROC_NULL))
       procBounds[i] = crbc::BoundaryProperties::CRBC;
+  }
+
+  // figure out if we need to send any edge data diagonally
+  if (grid_comm != MPI_COMM_NULL) {
+
+    // loop over sides
+    for (i=0; i<5; i++) {
+      // get a second side to check
+      for (j=i+1; j<6; j++) {
+        // make sure the sides are not parallel
+        if (j/2 != i/2) {
+        
+          if ((MPI_DIR[i] != MPI_PROC_NULL) && (MPI_DIR[j] != MPI_PROC_NULL)) {
+            send_edges.push_back({i, j});
+
+            // get rank of destination
+            for (int l=0; l<3; ++l)
+              diag_coords[l] = cart_rank[l];
+            // shift coordinate for first side
+            diag_coords[i/2] = (i%2 == 0) ? cart_rank[i/2]-1 : cart_rank[i/2]+1;
+            // shift coordinate for second side
+            diag_coords[j/2] = (j%2 == 0) ? cart_rank[j/2]-1 : cart_rank[j/2]+1;
+
+            if (MPI_Cart_rank(grid_comm, diag_coords, &diag_rank) != MPI_SUCCESS)
+              std::cerr << "MPI_Cart_rank failed" << std::endl;
+
+            MPI_EDGE_DIR.push_back(diag_rank);
+       
+          }
+        }
+      }
+    }
   }
 
   // stop timer
@@ -840,15 +991,6 @@ void yee_updater::allocate_memory()
   Hcoef = (dt/mu)/h;
   Ecoef = (dt/eps)/h;
 
-  // allocate buffer space for the worst possible case. We could use slightly
-  // less memory here by figuring out the exact sizes we need.
-  for (int i=0; i<6; ++i) {
-    if (procBounds[i] == crbc::BoundaryProperties::NONE) {
-      E_sbuf[i].assign(2*maxn*maxn, 0.0);
-      E_rbuf[i].assign(2*maxn*maxn, 0.0);
-    }
-  }
-
   // stop timer
   t2 = MPI_Wtime();
   alloc_mem_t += t2-t1;
@@ -910,7 +1052,7 @@ void yee_updater::init_DAB()
     //   x   x   x                      |     |     |    
     //   --------                    ---x-----x-----x---
     //       --------                            ---x-----x-----x---
-    //       x   x   x                              |     |     |     |
+    //       x   x   x                              |     |     |  
     //       --------                            ---x-----x-----x---
     //
     // Note that the use of normal and tangential components here is somewhat
@@ -1721,9 +1863,7 @@ void yee_updater::calc_DAB_send_params()
   //            |   |     
   //         x  o   x  o
   //            |   | 
-  // We note that we don't have to due this for the Yee values because the 
-  // data configuration is slightly different depending on which direction we
-  // send, but the DAB uses the 7-point wave stencil ...
+  // We note that the DAB uses the 7-point wave stencil ...
   //
   // We're ordering the possible corners in a standard way because this makes it
   // easier to keep track of things when we're actually doing the message 
@@ -2167,171 +2307,156 @@ void yee_updater::recv_DAB()
 *******************************************************************************/
 void yee_updater::send_E()
 {
-  // we just handle each case explicitly, but note that it wouldn't be terribly
-  // difficult to greatly reduce the code here
- 
-  int i,j,k;
-  int ns = maxn*maxn;
-  int nxm, nym, nzm;
-  nxm = nx-1;
-  nym = ny-1;
-  nzm = nz-1;
+  int i,j,k, min[3], max[3], n[3], data_ext[2], comp;
   double t1, t2;
 
   // start timer
   t1 = MPI_Wtime();
 
-  // send the last plane of points we were able to update for the tangential 
-  // components
-  if (procBounds[0] == crbc::BoundaryProperties::NONE) { // left side in x, send Ey, Ez
+  min[0] = min[1] = min[2] = 0;
+  max[0] = nx;
+  max[1] = ny;
+  max[2] = nz;
 
+  n[0] = nx;
+  n[1] = ny;
+  n[2] = nz;
+
+  // loop over the the directions we may need to send values
+  for (int l=0; l<6; ++l) {
+
+    // clear any old entries
+    E_sbuf[l].clear();
+    E_rbuf[l].clear();
+
+    // (re)set the min loop indices
+    min[0] = min[1] = min[2] = 0;
+
+    // check to see if we need to send data in the current direction
+    if (procBounds[l] == crbc::BoundaryProperties::NONE) {
+
+      // figure out the loop indices.
+      if (l % 2 == 0) { // left side set index in normal direction to 1
+        min[l/2] = 1;
+        max[l/2] = 2;  // (l/2) gives normal component
+      } else { // right side set index to n-2
+        min[l/2] = n[l/2] - 2;
+        max[l/2] = n[l/2] - 1;  // (l/2) gives normal component
+      }
+
+      // the other indices will depend on the E component we are sending
+      // The components are the tangential directions to (l/2) so we can 
+      // get these with ((l/2) + 1) % 3) and ((l/2) + 2) % 3).
+      comp = ((l/2) + 1) % 3;
+
+      // figure out indices for the current component. The should be
+      // 0:n in the direction tangent to l/2 and comp and 0:n-1 for the 
+      // direction normal to comp
+      max[comp] = n[comp] - 1;
+      data_ext[0] = (comp == 0) ? nx-1 : nx;
+      data_ext[1] = (comp == 1) ? ny-1 : ny;
+
+      // for the tangential component, the possible pairs of (l/2) and comp are
+      // (0,1) (0,2) or (1,2), up to ordering
+      // We want to map (0,1) -> 2, (0,2) -> 1, and (1,2) -> 0 and we can do that
+      // with the following formula:
+      // (2*((l/2) + comp) % 3)
+      max[2*((l/2) + comp) % 3] = n[2*((l/2) + comp) % 3]; 
+
+      // now copy the current component into the buffer
+      for (k = min[2]; k<max[2]; ++k)
+        for (j = min[1]; j<max[1]; ++j)
+          for (i = min[0]; i<max[0]; ++i)
+            E_sbuf[l].push_back(E[comp][i + (j + k*data_ext[1])*data_ext[0]]);
+
+      // now do the other possible component
+      comp = ((l/2) + 2) % 3;
+
+      // figure out indices for the current component. T
+      max[comp] = n[comp] - 1;
+      data_ext[0] = (comp == 0) ? nx-1 : nx;
+      data_ext[1] = (comp == 1) ? ny-1 : ny;
+      max[2*((l/2) + comp) % 3] = n[2*((l/2) + comp) % 3]; 
+
+      // now copy the current component into the buffer
+      for (k = min[2]; k<max[2]; ++k)
+        for (j = min[1]; j<max[1]; ++j)
+          for (i = min[0]; i<max[0]; ++i)
+            E_sbuf[l].push_back(E[comp][i + (j + k*data_ext[1])*data_ext[0]]);
+
+      // finally, send the data
+      MPI_Request sreq, rreq;
+
+      send_req.push_back(sreq);
+      recv_req.push_back(rreq);
+
+      if (MPI_Isend(E_sbuf[l].data(), E_sbuf[l].size(), MPI_DOUBLE, MPI_DIR[l], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+
+      // make sure the receive buffer is big enough
+      if (E_sbuf[l].size() > E_rbuf[l].size())
+        E_rbuf[l].assign(E_sbuf[l].size(), 0.0);
+
+      if (MPI_Irecv(E_rbuf[l].data(), E_sbuf[l].size(), MPI_DOUBLE, MPI_DIR[l], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+        std::cerr << "MPI_Isend failed" << std::endl;
+      
+    } // end if boundary type == none
+  }
+
+  // now do any diagonal sends
+  for (std::size_t l=0; l<MPI_EDGE_DIR.size(); ++l) {
+
+    // clear any old entries
+    E_edge_sbuf[l].clear();
+    E_edge_rbuf[l].clear();
+
+    // figure out which component we need to send. It will be the component
+    // that is tangent to both send directions. For example, if there are
+    // sends in the x and y directions, we need to send the Ez (E[2) component
+    // We get this with (2*((send_edges[l][0]/2) + (send_edges[l][1]/2)) % 3)
+    comp = (2*((send_edges[l][0]/2) + (send_edges[l][1]/2)) % 3);
+
+    // now figure out the loop extents. This is the same as the sides, but we 
+    // need to adjust for shifts in two directions instead of 1.
+    min[0] = min[1] = min[2] = 0;
+
+    for (i=0; i<2; ++i) {
+      if (send_edges[l][i] % 2 == 0) { // left side set index in normal direction to 1
+        min[send_edges[l][i]/2] = 1;
+        max[send_edges[l][i]/2] = 2;  // (l/2) gives normal component
+      } else { // right side set index to n-2
+        min[send_edges[l][i]/2] = n[send_edges[l][i]/2] - 2;
+        max[send_edges[l][i]/2] = n[send_edges[l][i]/2] - 1; 
+      }
+    }
+
+    max[comp] = n[comp] - 1;
+    data_ext[0] = (comp == 0) ? nx-1 : nx;
+    data_ext[1] = (comp == 1) ? ny-1 : ny;
+
+    // now copy the current component into the buffer
+    for (k = min[2]; k<max[2]; ++k)
+      for (j = min[1]; j<max[1]; ++j)
+        for (i = min[0]; i<max[0]; ++i)
+          E_edge_sbuf[l].push_back(E[comp][i + (j + k*data_ext[1])*data_ext[0]]);
+
+    // finally, send the data
     MPI_Request sreq, rreq;
 
     send_req.push_back(sreq);
     recv_req.push_back(rreq);
 
-    // copy Ey and Ez to buffer
-    i = 1; // grid overlap
-    for (k = 0; k<nz; ++k)
-      for (j=0; j<nym; ++j)
-        E_sbuf[0][j + k*nym] = E[1][i + (j + k*nym)*nx];
+    if (MPI_Isend(E_edge_sbuf[l].data(), E_edge_sbuf[l].size(), MPI_DOUBLE, MPI_EDGE_DIR[l], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
+      std::cerr << "MPI_Isend failed" << std::endl;
 
-      for (k = 0; k<nzm; ++k)
-        for (j=0; j<ny; ++j)
-          E_sbuf[0][ns + j + k*ny] = E[2][i + (j + k*ny)*nx];
+    // make sure the receive buffer is big enough
+    if (E_edge_sbuf[l].size() > E_edge_rbuf[l].size())
+      E_edge_rbuf[l].assign(E_edge_sbuf[l].size(), 0.0);
 
-      if (MPI_Isend(E_sbuf[0].data(), 2*ns, MPI_DOUBLE, MPI_DIR[0], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
+    if (MPI_Irecv(E_edge_rbuf[l].data(), E_edge_sbuf[l].size(), MPI_DOUBLE, MPI_EDGE_DIR[l], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
+      std::cerr << "MPI_Isend failed" << std::endl;
 
-      if (MPI_Irecv(E_rbuf[0].data(), 2*ns, MPI_DOUBLE, MPI_DIR[0], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-    }
-
-    if (procBounds[1] == crbc::BoundaryProperties::NONE) { // right side in x, send Ey, Ez
-
-      MPI_Request sreq, rreq;
-
-      send_req.push_back(sreq);
-      recv_req.push_back(rreq);
-
-      // copy Ey and Ez to buffer
-      i = nx-2; // overlap
-      for (k = 0; k<nz; ++k)
-        for (j=0; j<nym; ++j)
-          E_sbuf[1][j + k*nym] = E[1][i + (j + k*nym)*nx];
-
-      for (k = 0; k<nzm; ++k)
-        for (j=0; j<ny; ++j)
-          E_sbuf[1][ns + j + k*ny] = E[2][i + (j + k*ny)*nx];
-
-      if (MPI_Isend(E_sbuf[1].data(), 2*ns, MPI_DOUBLE, MPI_DIR[1], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-      if (MPI_Irecv(E_rbuf[1].data(), 2*ns, MPI_DOUBLE, MPI_DIR[1], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-    }
-
-    if (procBounds[2] == crbc::BoundaryProperties::NONE) { // left side in y, send Ex, Ez
-
-      MPI_Request sreq, rreq;
-
-      send_req.push_back(sreq);
-      recv_req.push_back(rreq);
-
-      // copy Ex and Ez to buffer
-      j = 1; // overlap
-      for (k = 0; k<nz; ++k)
-        for (i=0; i<nxm; ++i)
-          E_sbuf[2][i + k*nxm] = E[0][i + (j + k*ny)*nxm];
-
-      for (k = 0; k<nzm; ++k)
-        for (i=0; i<nx; ++i)
-          E_sbuf[2][ns + i + k*nx] = E[2][i + (j + k*ny)*nx];
-
-      if (MPI_Isend(E_sbuf[2].data(), 2*ns, MPI_DOUBLE, MPI_DIR[2], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-      if (MPI_Irecv(E_rbuf[2].data(), 2*ns, MPI_DOUBLE, MPI_DIR[2], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-    }
-
-    if (procBounds[3] == crbc::BoundaryProperties::NONE) { // right side in y, send Ex, Ez
-
-      MPI_Request sreq, rreq;
-
-      send_req.push_back(sreq);
-      recv_req.push_back(rreq);
-
-      // copy Ex and Ez to buffer
-      j = ny-2; // overlap
-      for (k = 0; k<nz; ++k)
-        for (i=0; i<nxm; ++i)
-          E_sbuf[3][i + k*nxm] = E[0][i + (j + k*ny)*nxm];
-
-      for (k = 0; k<nzm; ++k)
-        for (i=0; i<nx; ++i)
-          E_sbuf[3][ns + i + k*nx] = E[2][i + (j + k*ny)*nx];
-
-      if (MPI_Isend(E_sbuf[3].data(), 2*ns, MPI_DOUBLE, MPI_DIR[3], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-      if (MPI_Irecv(E_rbuf[3].data(), 2*ns, MPI_DOUBLE, MPI_DIR[3], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-    }
-
-    if (procBounds[4] == crbc::BoundaryProperties::NONE) { // left side in z, send Ex, Ey
-
-      MPI_Request sreq, rreq;
-
-      send_req.push_back(sreq);
-      recv_req.push_back(rreq);
-
-      // copy Ex and Ey to buffer
-      k = 1; // overlap
-      for (j = 0; j<ny; ++j)
-        for (i=0; i<nxm; ++i)
-          E_sbuf[4][i + j*nxm] = E[0][i + (j + k*ny)*nxm];
-
-      for (j = 0; j<nym; ++j)
-        for (i=0; i<nx; ++i)
-          E_sbuf[4][ns + i + j*nx] = E[1][i + (j + k*nym)*nx];
-
-      if (MPI_Isend(E_sbuf[4].data(), 2*ns, MPI_DOUBLE, MPI_DIR[4], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-      if (MPI_Irecv(E_rbuf[4].data(), 2*ns, MPI_DOUBLE, MPI_DIR[4], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-    }
-
-    if (procBounds[5] == crbc::BoundaryProperties::NONE) { // right side in z, send Ex, Ey
-
-      MPI_Request sreq, rreq;
-
-      send_req.push_back(sreq);
-      recv_req.push_back(rreq);
-
-      // copy Ex and Ey to buffer
-      k = nz-2; // overlap
-      for (j = 0; j<ny; ++j)
-        for (i=0; i<nxm; ++i)
-          E_sbuf[5][i + j*nxm] = E[0][i + (j + k*ny)*nxm];
-
-      for (j = 0; j<nym; ++j)
-        for (i=0; i<nx; ++i)
-          E_sbuf[5][ns + i + j*nx] = E[1][i + (j + k*nym)*nx];
-
-      if (MPI_Isend(E_sbuf[5].data(), 2*ns, MPI_DOUBLE, MPI_DIR[5], 0, grid_comm, &send_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-      if (MPI_Irecv(E_rbuf[5].data(), 2*ns, MPI_DOUBLE, MPI_DIR[5], 0, grid_comm, &recv_req.back()) != MPI_SUCCESS)
-        std::cerr << "MPI_Isend failed" << std::endl;
-
-    }
+  }
 
   // stop timer
   t2 = MPI_Wtime();
@@ -2344,105 +2469,122 @@ void yee_updater::send_E()
 *******************************************************************************/
 void yee_updater::recv_E()
 {
-  // again we just handle all the cases explicitly
 
-  int i,j,k;
-  int ns = maxn*maxn;
-  int nxm, nym, nzm;
-  nxm = nx-1;
-  nym = ny-1;
-  nzm = nz-1;
+  int i,j,k, min[3], max[3], n[3], data_ext[2], comp, ind;
   double t1, t2;
+
+  // start timer
   t1 = MPI_Wtime();
 
-  // make sure all of the recieves are complete
+  // make sure all of the receives are complete
   if (MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE) != MPI_SUCCESS)
     std::cerr << "MPI_Waitall failed (recv_req)" << std::endl;
 
-  // copy the values from the buffers
+  // clear the receive requests
   recv_req.clear();
 
-  if (procBounds[0] == crbc::BoundaryProperties::NONE) { // left side in x, recieve Ey, Ez
+  min[0] = min[1] = min[2] = 0;
+  max[0] = nx;
+  max[1] = ny;
+  max[2] = nz;
 
-    // copy Ey and Ez from buffer
-    i = 0;
-    for (k = 0; k<nz; ++k)
-      for (j=0; j<nym; ++j)
-        E[1][i + (j + k*nym)*nx] = E_rbuf[0][j + k*nym];
+  n[0] = nx;
+  n[1] = ny;
+  n[2] = nz;
 
-    for (k = 0; k<nzm; ++k)
-      for (j=0; j<ny; ++j)
-        E[2][i + (j + k*ny)*nx] = E_rbuf[0][ns + j + k*ny];
+  // loop over the the directions we may get data 
+  for (int l=0; l<6; ++l) {
 
+    // (re)set the min loop indices
+    min[0] = min[1] = min[2] = 0;
+
+    // check to see if we need to send data in the current direction
+    if (procBounds[l] == crbc::BoundaryProperties::NONE) {
+
+      // figure out the loop indices.
+      if (l % 2 == 0) { // left side set index in normal direction to 0
+        max[l/2] = 1;  // (l/2) gives normal component
+      } else { // right side set index to n-1
+        min[l/2] = n[l/2] - 1;
+        max[l/2] = n[l/2];  // (l/2) gives normal component
+      }
+
+      // the other indices will depend on the E component we are sending
+      // The components are the tangential directions to (l/2) so we can 
+      // get these with ((l/2) + 1) % 3) and ((l/2) + 2) % 3).
+      comp = ((l/2) + 1) % 3;
+
+      // figure out indices for the current component. The should be
+      // 0:n in the direction tangent to l/2 and comp and 0:n-1 for the 
+      // direction normal to comp
+      max[comp] = n[comp] - 1;
+      data_ext[0] = (comp == 0) ? nx-1 : nx;
+      data_ext[1] = (comp == 1) ? ny-1 : ny;
+
+      // for the tangential component, the possible pairs of (l/2) and comp are
+      // (0,1) (0,2) or (1,2), up to ordering
+      // We want to map (0,1) -> 2, (0,2) -> 1, and (1,2) -> 0 and we can do that
+      // with the following formula:
+      // (2*((l/2) + comp) % 3)
+      max[2*((l/2) + comp) % 3] = n[2*((l/2) + comp) % 3]; 
+
+      // now copy the current component into the buffer
+      ind = 0;
+      for (k = min[2]; k<max[2]; ++k)
+        for (j = min[1]; j<max[1]; ++j)
+          for (i = min[0]; i<max[0]; ++i)
+            E[comp][i + (j + k*data_ext[1])*data_ext[0]] = E_rbuf[l][ind++];
+
+      // now do the other possible component
+      comp = ((l/2) + 2) % 3;
+
+      // figure out indices for the current component. 
+      max[comp] = n[comp] - 1;
+      data_ext[0] = (comp == 0) ? nx-1 : nx;
+      data_ext[1] = (comp == 1) ? ny-1 : ny;
+      max[2*((l/2) + comp) % 3] = n[2*((l/2) + comp) % 3]; 
+
+      // now copy the current component into the buffer
+      for (k = min[2]; k<max[2]; ++k)
+        for (j = min[1]; j<max[1]; ++j)
+          for (i = min[0]; i<max[0]; ++i)
+            E[comp][i + (j + k*data_ext[1])*data_ext[0]] = E_rbuf[l][ind++];
+  
+    } // end if boundary type == none
   }
 
-  if (procBounds[1] == crbc::BoundaryProperties::NONE) { // right side in x, recieve Ey, Ez
+  // now do any diagonal receives
+  for (std::size_t l=0; l<MPI_EDGE_DIR.size(); ++l) {
 
-    // copy Ey and Ez from buffer
-    i = nx-1;
-    for (k = 0; k<nz; ++k)
-      for (j=0; j<nym; ++j)
-        E[1][i + (j + k*nym)*nx] = E_rbuf[1][j + k*nym];
+    // figure out which component we need to send. It will be the component
+    // that is tangent to both send directions. For example, if there are
+    // sends in the x and y directions, we need to send the Ez (E[2) component
+    // We get this with (2*((send_edges[l][0]/2) + (send_edges[l][1]/2)) % 3)
+    comp = (2*((send_edges[l][0]/2) + (send_edges[l][1]/2)) % 3);
 
-    for (k = 0; k<nzm; ++k)
-      for (j=0; j<ny; ++j)
-        E[2][i + (j + k*ny)*nx] = E_rbuf[1][ns + j + k*ny];
+    // now figure out the loop extents. This is the same as the sides, but we 
+    // need to adjust for shifts in two directions instead of 1.
+    min[0] = min[1] = min[2] = 0;
 
-  }
+    for (i=0; i<2; ++i) {
+      if (send_edges[l][i] % 2 == 0) { // left side set index in normal direction to 0
+        max[send_edges[l][i]/2] = 1;  // (l/2) gives normal component
+      } else { // right side set index to n-1
+        min[send_edges[l][i]/2] = n[send_edges[l][i]/2] - 1;
+        max[send_edges[l][i]/2] = n[send_edges[l][i]/2]; 
+      }
+    }
 
-  if (procBounds[2] == crbc::BoundaryProperties::NONE) { // left side in y, recieve Ex, Ez
+    max[comp] = n[comp] - 1;
+    data_ext[0] = (comp == 0) ? nx-1 : nx;
+    data_ext[1] = (comp == 1) ? ny-1 : ny;
 
-    // copy Ex and Ez from buffer
-    j = 0; 
-    for (k = 0; k<nz; ++k)
-      for (i=0; i<nxm; ++i)
-        E[0][i + (j + k*ny)*nxm] = E_rbuf[2][i + k*nxm];
-
-    for (k = 0; k<nzm; ++k)
-      for (i=0; i<nx; ++i)
-        E[2][i + (j + k*ny)*nx] = E_rbuf[2][ns + i + k*nx];
-
-  }
-
-  if (procBounds[3] == crbc::BoundaryProperties::NONE) { // right side in y, recieve Ex, Ez
-
-    // copy Ex and Ez from buffer
-    j = ny-1;
-    for (k = 0; k<nz; ++k)
-      for (i=0; i<nxm; ++i)
-        E[0][i + (j + k*ny)*nxm] = E_rbuf[3][i + k*nxm];
-
-    for (k = 0; k<nzm; ++k)
-      for (i=0; i<nx; ++i)
-        E[2][i + (j + k*ny)*nx] = E_rbuf[3][ns + i + k*nx];
-
-  }
-
-  if (procBounds[4] == crbc::BoundaryProperties::NONE) { // left side in z, recieve Ex, Ey
-
-    // copy Ex and Ey from buffer
-    k = 0;
-    for (j = 0; j<ny; ++j)
-      for (i=0; i<nxm; ++i)
-        E[0][i + (j + k*ny)*nxm] = E_rbuf[4][i + j*nxm];
-
-    for (j = 0; j<nym; ++j)
-      for (i=0; i<nx; ++i)
-        E[1][i + (j + k*nym)*nx] = E_rbuf[4][ns + i + j*nx];
-
-  }
-
-  if (procBounds[5] == crbc::BoundaryProperties::NONE) { // right side in z, recieve Ex, Ey
-
-    // copy Ex and Ey from buffer
-    k = nz-1;
-    for (j = 0; j<ny; ++j)
-      for (i=0; i<nxm; ++i)
-        E[0][i + (j + k*ny)*nxm] = E_rbuf[5][i + j*nxm];
-
-      for (j = 0; j<nym; ++j)
-        for (i=0; i<nx; ++i)
-          E[1][i + (j + k*nym)*nx] = E_rbuf[5][ns + i + j*nx];
+    // now copy the current component into the buffer
+    ind=0;
+    for (k = min[2]; k<max[2]; ++k)
+      for (j = min[1]; j<max[1]; ++j)
+        for (i = min[0]; i<max[0]; ++i)
+          E[comp][i + (j + k*data_ext[1])*data_ext[0]] = E_edge_rbuf[l][ind++];
 
   }
 
