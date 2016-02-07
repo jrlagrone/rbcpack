@@ -124,7 +124,6 @@ private:
   double T, dt, h, Etime, Htime;
   double tol, CRBC_T;
   double coord[3], domain_width;
-  int CRBC_P[6];
   int nprocs, nprocs_cubed;
   int nx, ny, nz;
   int maxn;
@@ -145,7 +144,6 @@ private:
   std::vector<MPI_Request> DAB_send_req, DAB_recv_req;
   std::vector<int> DAB_props, rDAB_props;
   std::vector<double> DAB_refl, rDAB_refl;
-  double scatter_radius;
   double create_comm_t,  alloc_mem_t, init_dab_t, step_E_t, step_inner_H_t, \
          step_outer_H_t, step_DAB_t, send_DAB_t, recv_DAB_t, send_E_t, \
          recv_E_t, sol_t, load_init_conds_t, calc_norm_t, calc_err_t, calc_params_t;
