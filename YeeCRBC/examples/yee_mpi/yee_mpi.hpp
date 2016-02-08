@@ -49,6 +49,9 @@
 // for std::vector
 #include <vector>
 
+// for std::array
+#include <array>
+
 // include MPI for parallel implementation
 #include <mpi.h>
 
@@ -110,8 +113,8 @@ private:
 
   double Hcoef, Ecoef;
 
-  // storage for mpi messages
-  std::vector<double> E_sbuf[6];
+  // storage for mpi messages. The lengths correspond to worst case situations
+  std::vector<double> E_sbuf[6]; 
   std::vector<double> E_rbuf[6];
   std::vector<double> E_edge_sbuf[12];
   std::vector<double> E_edge_rbuf[12];
