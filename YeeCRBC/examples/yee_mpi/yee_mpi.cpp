@@ -350,7 +350,7 @@ void yee_updater::print_mem_use() const
     send.push_back(fields);
     send.push_back(dab_mem_use);
     send.push_back(tot_mem_use);
-    recv.assign(nprocs_cubed*5, 0);
+    recv.assign(nprocs_cubed*5, 0.0);
 
     if (MPI_Gather(send.data(), 5, MPI_DOUBLE, recv.data(), 5, MPI_DOUBLE, 0, grid_comm) != MPI_SUCCESS)
       std::cerr << "MPI_Gather failed " << std::endl;
@@ -606,11 +606,12 @@ void yee_updater::calc_params()
 	    if (r[i] > 0) {
 	      if (cart_rank[i] == j) {
 		n[i]++;
-		r[i]--;
 	      }
 	      if (cart_rank[i] > j)
 		coord[i] += h;
 	    }
+            // decrease remainder count
+            r[i]--;
 	  }
 	}
       } // end for k
@@ -836,7 +837,7 @@ void yee_updater::init_DAB()
     rDAB_props.assign(15*nprocs_cubed, 0.0);
     rDAB_refl.assign(10*nprocs_cubed, 0.0);
   }
-  DAB_props.assign(15, 0);
+  DAB_props.assign(15, 0.0);
   DAB_refl.assign(10, 0.0);
   DAB_refl[6] = coord[0];
   DAB_refl[7] = coord[1];
