@@ -5,12 +5,12 @@
 
 int main(int argc, char* argv[]) {
 
-  int nprocs, id, procs_per_dim;
-  double t, crbc_t, tol, h, w, t1, t2;
+  int nprocs, id, procs_per_dim, n, p;
+  double t, crbc_t, w, t1, t2;
   MPI_Comm comm = MPI_COMM_WORLD;
 
   // read commandline input
-  // expect ./foo w h t crbc_t tol
+  // expect ./foo w n t crbc_t tol
   // where
   // w is the domain width
   // h is the grid spacing
@@ -22,10 +22,10 @@ int main(int argc, char* argv[]) {
   } else {
 
     w = std::atof(argv[1]);
-    h = std::atof(argv[2]);
+    n = std::atoi(argv[2]);
     t = std::atof(argv[3]);
     crbc_t = std::atof(argv[4]);
-    tol = std::atof(argv[5]);
+    p = std::atoi(argv[5]);
 
   }
 
@@ -50,13 +50,13 @@ int main(int argc, char* argv[]) {
   if (id == 0) 
     std::cout << "nprocs = " << nprocs << std::endl;
 
-  // calculate the largest integer cube roor
+  // calculate the largest integer cube root
   procs_per_dim = floor(std::pow(nprocs + 1e-8, 1.0/3.0));
 
   if (id == 0) 
     std::cout << "using " << procs_per_dim << " per dimension" << std::endl;
 
-  yee_updater solver(comm, procs_per_dim, w, h, t, crbc_t, tol, 0.1, 4);
+  yee_updater solver(comm, procs_per_dim, w, n, t, crbc_t, p, 0.1, 1);
 
   try {
     solver.run();

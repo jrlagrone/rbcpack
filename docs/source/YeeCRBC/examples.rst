@@ -48,3 +48,12 @@ only supports up to 3 dimensions).
    :maxdepth: 2
 
    wave_eq_example_in_Cpp
+
+Next we demonstrate a possible implementation of the 3D Yee scheme using the C++
+interface and MPI (note that we are not offcially supporting MPI at this time)
+
+.. toctree::
+   :maxdepth: 2
+
+   yee_mpi
+

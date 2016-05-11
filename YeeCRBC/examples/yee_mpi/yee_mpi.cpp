@@ -51,10 +51,10 @@
 yee_updater::yee_updater(MPI_Comm comm,          
                          const int &nprocs,     
 	                 const double &w,        
-	                 const double &h,        
+	                 const int &n,        
 	                 const double &T,        
 	                 const double &CRBC_T,   
-	                 const double &CRBC_tol, 
+	                 const int &CRBC_P, 
                          const double &io_t, 
                          const int &skip,    
 	                 const double &eps,      
@@ -67,10 +67,10 @@ yee_updater::yee_updater(MPI_Comm comm,
   // save inputs
   this->T = T;
   this->CRBC_T = CRBC_T;
-  tol = CRBC_tol;
+  this->CRBC_P = CRBC_P;
   domain_width = w;
   this->nprocs = nprocs;
-  this->h = h;
+  n_global = n;
   this->io_t = io_t;
   this->skip = skip;
   this->eps = eps;
@@ -485,18 +485,13 @@ void yee_updater::print_timing_data() const
 void yee_updater::calc_params() 
 {
 
-  double eta, emax, cosines[40];
   int x, i, j, k, rem, n[3], P;
   double t1, t2;
 
   t1 = MPI_Wtime();  // start timer
 
-  // \delta/(cT) where delta is the seperation of the boundary from the source
-  // we assume the source is centered in the domain
-  eta = (domain_width / 2.0 ) / (c*CRBC_T);
-
-  // figure out the expected number of recursoins
-  optimal_cosines(eta, 20, tol, cosines, &P, &emax);
+  // use the requested number of recursions
+  P = CRBC_P;
 
   // compute the left-most point in each coordinate direction
   coord[0] = -domain_width/2.0;
@@ -513,13 +508,13 @@ void yee_updater::calc_params()
   // Also note that we are overlaping the processor domains by a factor of h.
   // This is certainly less memory efficient, but it makes the message 
   // passing and updates a bit more straightforward
+  h = domain_width/((double) (n_global - 1.0));
   if (nprocs == 1) {
     
     // if there's only 1 MPI process, we just compute the number of grid points
     // like normal
-    x = domain_width/h + 1;
     for (i=0; i<3; ++i)
-      n[i] = x;
+      n[i] = n_global;
 
   } else {
 
@@ -534,21 +529,21 @@ void yee_updater::calc_params()
     //     ...........       ...........       ...........
     //
     // So if we had a single process we would have 
-    //   (domain_width/h + 1) points
+    //   n_global points
     // plus there are 2 DABS, which give
     //   (2*dab_wt*P) points
     // plus we have the extra points due to overlapping the grid, which gives
     //   ((nprocs-1)*2) points
     // putting this all together, we get that we need a total of 
-    //   (domain_width/h + 2*dab_wt*P + 2*nprocs -1)
+    //   (n_global + 2*dab_wt*P + 2*nprocs -2)
     // We try to divide this up evenly and calculate how many points are left
     //
     // IMPORTANT:
     // This can fail by making processes have too few points on the boundary or
     // or even assigning a negative number of points on the boundary processes.
     // This isn't really accounted for, but we attempt to abort if we see it ...
-    x = ((int) (domain_width/h + 2*dab_wt*P + 2*(nprocs) - 1)) / nprocs;
-    rem = ((int) (domain_width/h + 2*dab_wt*P + 2*(nprocs) - 1)) % nprocs;
+    x = ((int) (n_global + 2*dab_wt*P + 2*(nprocs) - 2)) / nprocs;
+    rem = ((int) (n_global + 2*dab_wt*P + 2*(nprocs) - 2)) % nprocs;
 
     // Next we allocate points to processes in each direction bases on whether
     // they are on the boundary or not
@@ -610,7 +605,6 @@ void yee_updater::calc_params()
 	      if (cart_rank[i] > j)
 		coord[i] += h;
 	    }
-            // decrease remainder count
             r[i]--;
 	  }
 	}
@@ -622,7 +616,7 @@ void yee_updater::calc_params()
   // reasonable
   if ((n[0] < 3) || (n[1] < 3) || (n[2] < 3)) {
 
-    std::cerr << "Grid partitioning failed. Try decreasing h, dab_wt, and/or nprocs" << std::endl;
+    std::cerr << "Grid partitioning failed. Try increasing n, decrreasing dab_wt, and/or nprocs" << std::endl;
       MPI_Abort(glob_comm, -3);
   }
 
@@ -765,9 +759,9 @@ void yee_updater::init_solutions()
   // chances of coinciding with a grid point. If the source is on a grid
   // point there is the possiblity of a division by zero in the solution 
   // routines
-  src_loc[0] = 1.43e-7;
-  src_loc[1] = -5.3423e-7;
-  src_loc[2] = 9.012e-8;
+  src_loc[0] = 0.0;
+  src_loc[1] = 0.0;
+  src_loc[2] = 0.0;
 
   // set the grid spacing to be the same in all directions
   hloc[0] = h;
@@ -1026,7 +1020,8 @@ void yee_updater::init_DAB()
           }
 
 	  // call initializer and limit the number of recursions to at most 20
-          bound_upd[m].init_face(l, low, high, delta, 20, tol);
+          // bound_upd[m].init_face(l, low, high, delta, 20, tol);
+          bound_upd[m].init_face(l, low, high, delta, CRBC_P);
 
 	} // end loop over components
       }
@@ -1764,7 +1759,6 @@ void yee_updater::calc_DAB_send_params()
       }
     } 
   }
-  
 }
 
 /*******************************************************************************

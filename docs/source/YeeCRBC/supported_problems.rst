@@ -34,5 +34,5 @@ Other Boundary Conditions
 
 Currently, we support any configuration of rectangular homogeneous Dirichlet, 
 homogeneous Neumann, and CRBC/DAB boundaries intersecting at right angles. Note
-that it is possible to implement PEC boundaries under these constraints. We do
+that it is possible to implement PEC/PMC boundaries under these constraints. We do
 not currently support periodic conditions.

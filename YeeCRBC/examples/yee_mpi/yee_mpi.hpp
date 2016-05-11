@@ -28,7 +28,7 @@
    C++ interface to the CRBC/DAB library with MPI. Note that we do not
    officially support MPI in the library, but it is possible to use it in an MPI
    environment in some situtations. This implementation is meant to demonstrate
-   such situation.
+   such a situation.
 
    Note that the library should ideally be compiled with MPI compilers.
 
@@ -69,9 +69,10 @@ public:
   /// \param[in] comm      MPI communicator
   /// \param[in] nprocs    the number of processes to use in each direction
   /// \param[in] w         the approximate domain width (may be changed slighty due to discretization)
+  /// \param[in] n         number of grid points
   /// \param[in] T         the total simulation time
   /// \param[in] CRBC_T    CRBC time parameter (usually CRBC_T = T)
-  /// \param[in] CRBC_tol  the tolerance for the DAB boundaries
+  /// \param[in] CRBC_P    the number of CRBC recursions
   /// \param[in] io_t      approximately how often to generate output
   /// \param[in] skip      the stride to use when sampling errors
   /// \param[in] eps       permittivity
@@ -82,10 +83,10 @@ public:
   yee_updater(MPI_Comm comm,          
               const int &nprocs,     
 	      const double &w,        
-	      const double &h,        
+	      const int &n,        
 	      const double &T,        
 	      const double &CRBC_T,   
-	      const double &CRBC_tol, 
+	      const int &CRBC_P, 
               const double &io_t = 0.05,
               const int &skip = 1,    
 	      const double &eps = 1.0,      
@@ -93,6 +94,8 @@ public:
               const double &gamma = 160.0,
               const double &tau = 0.35,
               const int &dab_wt = 3);
+
+  virtual ~yee_updater() {};
  
   /// run the simulation
   void run();
@@ -133,6 +136,7 @@ private:
   int ntsteps;
   int skip;
   int dab_wt;
+  int CRBC_P, n_global;
   bool isBoundaryProc;
   crbc::BoundaryProperties::Boundary procBounds[6];
   int MPI_DIR[6];

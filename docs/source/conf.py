@@ -65,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'RBCPack'
-copyright = u'2015, John LaGrone'
+copyright = u'2015-2016, rbcpack.org'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -139,7 +139,7 @@ html_theme_options = {
     #],
 
     # Navigation bar title. (Default: ``project`` value)
-    'navbar_title': "RBCPack",
+    'navbar_title': "rbcpack",
 
     # Tab name for entire site. (Default: "Site")
     'navbar_site_name': "Components",
