@@ -91,10 +91,31 @@ endif()
 # build the library
 ADD_SUBDIRECTORY(src)
 
-# examples
-ADD_SUBDIRECTORY(examples)
+# examples --- uncomment this to build the examples as part of the full build 
+# process. The issue with this is that
+# the source files we copy to the same location of the build are not the source
+# files cmake uses to build the example so it might be confusing to users.
+# ADD_SUBDIRECTORY(examples)
 
-# copy examples to build directory
-file(COPY examples DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+# so this is pretty much a hack to get the examples to be built in place so the
+# source is next to the binaries. It's probably not a good way to do this, but it
+# works better than the above.
+
+# set the example install location so an user can change it if desired
+set(example_dir "${CMAKE_CURRENT_BINARY_DIR}/examples" CACHE STRING "Set the install location for the examples.")
+
+# copy the examples to build directory
+file(COPY examples/3d_yee DESTINATION "${example_dir}")
+file(COPY examples/2d_yee DESTINATION "${example_dir}")
+file(COPY examples/wave_cxx DESTINATION "${example_dir}")
+file(COPY examples/yee_mpi DESTINATION "${example_dir}")
+
+# Create a CMakeList for the examples ...
+set(yeecrbc_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+MESSAGE(STATUS "yee_crbcDIR" ${yeecrbc_DIR})
+configure_file(examples/CMakeLists.txt.in ${example_dir}/CMakeLists.txt @ONLY)
+
+# now add the examples directory in the build location ...
+add_subdirectory(${example_dir} ${example_dir})
 
 
