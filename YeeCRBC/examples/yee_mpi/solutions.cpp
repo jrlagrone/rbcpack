@@ -131,6 +131,15 @@ void MW_FreeSpace::compute_solution(const double x[3], const double &t, double s
     // x FD
     rp = sqrt(ydist*ydist + (xdist + h[0]/2.0)*(xdist + h[0]/2.0) + zdist*zdist);
     rm = sqrt(ydist*ydist + (xdist - h[0]/2.0)*(xdist - h[0]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      for (int i=0; i<6; ++i)
+        sol[i] = 0.0;
+      return;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -204,6 +213,15 @@ void MW_FreeSpace::compute_solution(const double x[3], const double &t, double s
     double dxdz, dydz;
 
     r = sqrt(xdist2 + ydist2 + zdist2);
+
+    // make sure we don't divide by 0
+    if (std::abs(r) < 1e-12) {
+      // just return 0 (this is usually, but not alway correct)
+      for (int i=0; i<6; ++i)
+        sol[i] = 0.0;
+      return;
+    } 
+    
     r2 = r*r;
     r3 = r2*r;
     r5 = r2*r3;
@@ -279,6 +297,13 @@ double MW_FreeSpace::compute_Ex_solution(const double x[3], const double &t) con
     // derivatives we need of w1
     rp = sqrt(xdist*xdist + (ydist + h[1]/2.0)*(ydist + h[1]/2.0) + zdist*zdist);
     rm = sqrt(xdist*xdist + (ydist - h[1]/2.0)*(ydist - h[1]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     argp = arg - rp;
     argm = arg - rm;
     expm = exp(-gamma*argm*argm);
@@ -287,6 +312,13 @@ double MW_FreeSpace::compute_Ex_solution(const double x[3], const double &t) con
 
     rp = sqrt(xdist*xdist + (zdist + h[2]/2.0)*(zdist + h[2]/2.0) + ydist*ydist);
     rm = sqrt(xdist*xdist + (zdist - h[2]/2.0)*(zdist - h[2]/2.0) + ydist*ydist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     argp = arg - rp;
     argm = arg - rm;
     expm = exp(-gamma*argm*argm);
@@ -302,6 +334,13 @@ double MW_FreeSpace::compute_Ex_solution(const double x[3], const double &t) con
     double arg, r, r2, r3, expon, temp, dxdt, dydt, dzdt;
 
     r = sqrt(xdist2 + ydist2 + zdist2);
+    
+    // make sure we don't divide by 0
+    if (std::abs(r) < 1e-12) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     r2 = r*r;
     r3 = r2*r;
 
@@ -347,6 +386,13 @@ double MW_FreeSpace::compute_Ey_solution(const double x[3], const double &t) con
     // derivatives we need of w1
     rp = sqrt(xdist*xdist + (zdist + h[2]/2.0)*(zdist + h[2]/2.0) + ydist*ydist);
     rm = sqrt(xdist*xdist + (zdist - h[2]/2.0)*(zdist - h[2]/2.0) + ydist*ydist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     argp = arg - rp;
     argm = arg - rm;
     expm = exp(-gamma*argm*argm);
@@ -357,6 +403,13 @@ double MW_FreeSpace::compute_Ey_solution(const double x[3], const double &t) con
      // derivatives we need of w2 for E
     rp = sqrt(ydist*ydist + (xdist + h[0]/2.0)*(xdist + h[0]/2.0) + zdist*zdist);
     rm = sqrt(ydist*ydist + (xdist - h[0]/2.0)*(xdist - h[0]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     argp = arg - rp;
     argm = arg - rm;
     expm = exp(-gamma*argm*argm);
@@ -373,6 +426,13 @@ double MW_FreeSpace::compute_Ey_solution(const double x[3], const double &t) con
     double arg, r, r2, r3, expon, temp, dxdt, dzdt;
 
     r = sqrt(xdist2 + ydist2 + zdist2);
+    
+    // make sure we don't divide by 0
+    if (std::abs(r) < 1e-12) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     r2 = r*r;
     r3 = r2*r;
 
@@ -419,6 +479,13 @@ double MW_FreeSpace::compute_Ez_solution(const double x[3], const double &t) con
     // derivatives we need of w1
     rp = sqrt(xdist*xdist + (ydist + h[1]/2.0)*(ydist + h[1]/2.0) + zdist*zdist);
     rm = sqrt(xdist*xdist + (ydist - h[1]/2.0)*(ydist - h[1]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     argp = arg - rp;
     argm = arg - rm;
     expm = exp(-gamma*argm*argm);
@@ -428,6 +495,13 @@ double MW_FreeSpace::compute_Ez_solution(const double x[3], const double &t) con
      // derivatives we need of w2 for E
     rp = sqrt(ydist*ydist + (xdist + h[0]/2.0)*(xdist + h[0]/2.0) + zdist*zdist);
     rm = sqrt(ydist*ydist + (xdist - h[0]/2.0)*(xdist - h[0]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     argp = arg - rp;
     argm = arg - rm;
     expm = exp(-gamma*argm*argm);
@@ -444,6 +518,13 @@ double MW_FreeSpace::compute_Ez_solution(const double x[3], const double &t) con
     double arg, r, r2, r3, expon, temp, dxdt, dydt;
 
     r = sqrt(xdist2 + ydist2 + zdist2);
+    
+    // make sure we don't divide by 0
+    if (std::abs(r) < 1e-12) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     r2 = r*r;
     r3 = r2*r;
 
@@ -488,6 +569,13 @@ double MW_FreeSpace::compute_Hx_solution(const double x[3], const double &t) con
     // derivatives we need of w1
     rp = sqrt(xdist*xdist + (ydist + h[1]/2.0)*(ydist + h[1]/2.0) + zdist*zdist);
     rm = sqrt(xdist*xdist + (ydist - h[1]/2.0)*(ydist - h[1]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -499,6 +587,13 @@ double MW_FreeSpace::compute_Hx_solution(const double x[3], const double &t) con
 
     rp = sqrt(xdist*xdist + (zdist + h[2]/2.0)*(zdist + h[2]/2.0) + ydist*ydist);
     rm = sqrt(xdist*xdist + (zdist - h[2]/2.0)*(zdist - h[2]/2.0) + ydist*ydist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -511,6 +606,13 @@ double MW_FreeSpace::compute_Hx_solution(const double x[3], const double &t) con
      // derivatives we need of w2 for E
     rp = sqrt(ydist*ydist + (xdist + h[0]/2.0)*(xdist + h[0]/2.0) + zdist*zdist);
     rm = sqrt(ydist*ydist + (xdist - h[0]/2.0)*(xdist - h[0]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -523,6 +625,13 @@ double MW_FreeSpace::compute_Hx_solution(const double x[3], const double &t) con
     // derivatives we need of w3 for E
     rp = sqrt(ydist*ydist + (xdist + h[0]/2.0)*(xdist + h[0]/2.0) + zdist*zdist);
     rm = sqrt(ydist*ydist + (xdist - h[0]/2.0)*(xdist - h[0]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -542,6 +651,13 @@ double MW_FreeSpace::compute_Hx_solution(const double x[3], const double &t) con
     double dxdz;
 
     r = sqrt(xdist2 + ydist2 + zdist2);
+    
+    // make sure we don't divide by 0
+    if (std::abs(r) < 1e-12) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     r2 = r*r;
     r3 = r2*r;
     r5 = r2*r3;
@@ -599,6 +715,13 @@ double MW_FreeSpace::compute_Hy_solution(const double x[3], const double &t) con
     // x FD
     rp = sqrt(ydist*ydist + (xdist + h[0]/2.0)*(xdist + h[0]/2.0) + zdist*zdist);
     rm = sqrt(ydist*ydist + (xdist - h[0]/2.0)*(xdist - h[0]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -611,6 +734,13 @@ double MW_FreeSpace::compute_Hy_solution(const double x[3], const double &t) con
     // y FD
     rp = sqrt(xdist*xdist + (ydist + h[1]/2.0)*(ydist + h[1]/2.0) + zdist*zdist);
     rm = sqrt(xdist*xdist + (ydist - h[1]/2.0)*(ydist - h[1]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -625,6 +755,13 @@ double MW_FreeSpace::compute_Hy_solution(const double x[3], const double &t) con
     // z FD
     rp = sqrt(xdist*xdist + (zdist + h[2]/2.0)*(zdist + h[2]/2.0) + ydist*ydist);
     rm = sqrt(xdist*xdist + (zdist - h[2]/2.0)*(zdist - h[2]/2.0) + ydist*ydist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -643,6 +780,13 @@ double MW_FreeSpace::compute_Hy_solution(const double x[3], const double &t) con
     double arg, r, r2, r3, r5, expon, temp, dxdx,  dzdz, dxdy, dydz;
 
     r = sqrt(xdist2 + ydist2 + zdist2);
+    
+    // make sure we don't divide by 0
+    if (std::abs(r) < 1e-12) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     r2 = r*r;
     r3 = r2*r;
     r5 = r2*r3;
@@ -700,6 +844,13 @@ double MW_FreeSpace::compute_Hz_solution(const double x[3], const double &t) con
     // x FD
     rp = sqrt(ydist*ydist + (xdist + h[0]/2.0)*(xdist + h[0]/2.0) + zdist*zdist);
     rm = sqrt(ydist*ydist + (xdist - h[0]/2.0)*(xdist - h[0]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -712,6 +863,13 @@ double MW_FreeSpace::compute_Hz_solution(const double x[3], const double &t) con
     // y FD
     rp = sqrt(xdist*xdist + (ydist + h[1]/2.0)*(ydist + h[1]/2.0) + zdist*zdist);
     rm = sqrt(xdist*xdist + (ydist - h[1]/2.0)*(ydist - h[1]/2.0) + zdist*zdist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -724,6 +882,13 @@ double MW_FreeSpace::compute_Hz_solution(const double x[3], const double &t) con
     // z FD
     rp = sqrt(xdist*xdist + (zdist + h[2]/2.0)*(zdist + h[2]/2.0) + ydist*ydist);
     rm = sqrt(xdist*xdist + (zdist - h[2]/2.0)*(zdist - h[2]/2.0) + ydist*ydist);
+
+    // make sure we don't divide by 0
+    if ((std::abs(rp) < 1e-12) || (std::abs(rm) < 1e-12)) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     rp3 = rp*rp*rp;
     rm3 = rm*rm*rm;
     argp = arg - rp;
@@ -744,6 +909,13 @@ double MW_FreeSpace::compute_Hz_solution(const double x[3], const double &t) con
     double arg, r, r2, r3, r5, expon, temp, dxdx, dydy, dxdz, dydz;
 
     r = sqrt(xdist2 + ydist2 + zdist2);
+    
+    // make sure we don't divide by 0
+    if (std::abs(r) < 1e-12) {
+      // just return 0 (this is usually, but not alway correct)
+      return 0.0;
+    } 
+
     r2 = r*r;
     r3 = r2*r;
     r5 = r2*r3;
