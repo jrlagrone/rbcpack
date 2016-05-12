@@ -57,6 +57,15 @@ by adding the following CMake option. ::
 
   -DCMAKE_INSTALL_PREFIX:PATH=/usr 
 
+Example Locations
+^^^^^^^^^^^^^^^^^
+
+By default the examples are built in the build directory, so they can be found
+in <path>/build/examples. They can be built at another location by setting the
+``example_dir`` variable. From the command line you can change by adding the option ::
+
+  -Dexample_dir:STRING="<path to install examples>"
+
 Index and Data Types
 ^^^^^^^^^^^^^^^^^^^^
 
