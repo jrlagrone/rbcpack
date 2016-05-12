@@ -1977,9 +1977,6 @@ void yee_updater::recv_DAB()
   DAB_recv_req.clear();
 
   // copy the values from the buffers
-  // start timer
-  t1 = MPI_Wtime();
-
   if (isBoundaryProc) {
 
     // loop over the directions we need to send
