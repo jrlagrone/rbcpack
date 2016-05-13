@@ -3646,7 +3646,6 @@ First we the header file for the ``yee_updater`` class, C++ output routines and
 Next we read in some command line input so we can change some problem parameters
 without having to recompile. ::
 
-
   // read commandline input
   // expect ./foo w n t crbc_t tol
   // where

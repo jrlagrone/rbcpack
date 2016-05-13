@@ -1,50 +1,49 @@
-Running the built-in Yee shceme CRBC examples
-=============================================
+Install and Running the Included Examples
+=========================================
 
-Install cmake (version >=3.0), if you don't have one. ::
+To built the library we require CMake (version >= 2.8.12). 
 
-  cmake -version
-
-By default, 'sh cmake-3.3.2-Linux-x86_64.sh' can install at current dir. Then create a link to cmake and put in the ~/bin and add this to PATH variable.
-
-Setup variable CC, CXX to indicate which compiler one want to use to compile the CRBC yee library(i.e. gcc or icc, g++ or icpc, or by default). Note that this have to be consistent if one want to manually link the library to their own yee scheme code later. In csh shell,::
-
-  setenv CC gcc
-  setenv CXX g++
-
-By default yee CRBC library will be install to */usr/local/lib* and header files in */usr/local/include/yeecrbc*. If you don't have access to those or want to install it locally:: 
+To build the library, extract the library and set up a build directory. Then 
+invoke cmake, make, and optionally make install. ::
 
   tar -zxvf yee_crbc_lib.tar.gz
-  mkdir build_gcc
-  cd build_gcc
-  cmake ../yee_crbc_lib_1.0.0 -DCMAKE_INSTALL_PREFIX:PATH=~/YeeCRBC
+  mkdir build
+  cd build
+  cmake ../yee_crbc_lib
   make
   make install
 
-For some compiler, one may need to add flag "-DCMAKE_CXX_FLAGS:STRING=-std=c++11" to the cmake command. In this case, the library and header files will be placed at *~/YeeCRBC/lib* and *~/YeeCRBC/include/crbc* repectively. To remove the build, just delete those directories::
+For some compilers, it may be necessary to add the flag "-DCMAKE_CXX_FLAGS:STRING=-std=c++11"
+to the cmake command. For more detailed instructions and options for installation,
+please refer to :doc:`../install`.
 
-  cd ~/YeeCRBC
-  rm -rf build_gcc lib include
+To test the build, the 2d Yee Scheme example (4500 iterations), 3d Yee (1200 iterations),
+or wave equation examples can be run by navigating to the `example` directory in
+the `build` folder, e.g.::
 
-To test the build, go to 2d_yee(4500 iterations) or 3d_yee(1200 iterations), e.g.::
-
-  cd build_gcc/examples/2d_yee
+  cd build/examples/2d_yee
   ./yee_TM.x
 
-To build the example again(e.g. 2d_yee),::
+For more details about these programs, please see :doc:`../examples`.
 
-  cd build_gcc/examples/2d_yee
-  setenv yeecrbc_DIR ~/YeeCRBC/lib
-  cmake .
+To build an example again (e.g. 2d_yee), it is only necessary to type make in 
+the example directory, e.g. ::
+
+  cd build/examples/2d_yee
   make
 
-To manually compile and link the example(e.g. 2d_yee), note that one need to specify the environment variable $yeecrbc_DIR::
+To manually compile and link the example (e.g. 2d_yee), note that one need to specify
+the specify the location the library was installed (the default is `/usr/local/` ::
 
-  gcc -L$yeecrbc_DIR -I$yeecrbc_DIR/../include/crbc yee_TM.c -o yee_TM.x -lyeecrbc -lstdc++ -lm
+  gcc -L/usr/local/lib -I/usr/local/include/crbc yee_TM.c -o yee_TM.x -lyeecrbc -lstdc++ -lm
 
-or::
+For more detailed information please refer to the following user guides:
 
-  g++ -L$yeecrbc_DIR -I$yeecrbc_DIR/../include/crbc yee_TM.c -o yee_TM.x -lyeecrbc
+.. toctree::
+   :maxdepth: 2
 
-See User Guides for more compiling options and running examples.
+   ../install
+   ../supported_problems
+   ../gen_use
+   ../examples
 

@@ -25,7 +25,12 @@ Optimal Cosines
 
 These files compute optimal parameters for CRBC/DAB boundaries for the scalar
 wave equation. It is appropriate to use these values for most homogeneous problems
-such as Maxwell's equations or accoustics.
+such as Maxwell's equations or accoustics. There are two functions provided:
+*optimal_cosines* and *optimal_cosinesP*. *optimal_cosines* computes optimal
+cosine parameters and the optimal number of recursions based on an user provided
+error tolerance. *optimal_cosines* computes the optimal cosine parameters based
+on an user provided number of recursions. The usage is documented in the header
+file optimal_cosines.h.
 
 These routines are available in the `RBCPack Bitbucket Reposistory <https://bitbucket.org/rbcpack/rbcpack>`_
 or can be downloaded directly :download:`optimal_cosines.tar.gz <optimal_cosines.tar.gz>`.

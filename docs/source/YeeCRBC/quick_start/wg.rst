@@ -1,11 +1,17 @@
-Waveguide Yee scheme with CRBC example
-======================================
+3D Waveguide Example using ToyFDTD code and the DAB/CRBC Library 
+================================================================
 
-We use `ToyFDTD2 <http://dougneubauer.com/wp-content/uploads/wdata/toyfdtd/ToyFDTD2.html>`_ as an example. The original file can be download at `here <http://dougneubauer.com/wp-content/uploads/wdata/toyfdtd/toyfdtd2_c.txt>`_. The modified version with CRBC can be download at :download:`ToyFDTD_CRBC.tar.gz<ToyFDTD_CRBC.tar.gz>`.
+For this example, we use `ToyFDTD2 <http://dougneubauer.com/wp-content/uploads/wdata/toyfdtd/ToyFDTD2.html>`_
+and add the functionality of the DAB/CRBC library. ToyFDTD was originally 
+written by Laurie E. Miller, it is no longer maintained but has been archived 
+by Doug Neubauer.
+The original file for this example can be downloaded at `here <http://dougneubauer.com/wp-content/uploads/wdata/toyfdtd/toyfdtd2_c.txt>`_. 
+The modified version with DAB/CRBC library can be download at :download:`ToyFDTD_CRBC.tar.gz<ToyFDTD_CRBC.tar.gz>`.
 
-Instead of rewriting the original ToyFDTD2 file, we write a seperate file called *external_c_codes.c* to control most of the CRBC setting and user-defined functions.
+Instead of rewriting the original ToyFDTD2 file, we write a seperate file called 
+*external_c_codes.c* to control most of the CRBC setting and user-defined functions.
 
-To compile and run the program(specify the location of CRBC library i.e. containing libyeecrbc.a)::
+To compile and run the program(specify the location of CRBC library i.e. the directory containing libyeecrbc.a)::
 
   setenv yeecrbc_DIR ~/YeeCRBC/lib
   make
@@ -14,7 +20,7 @@ To compile and run the program(specify the location of CRBC library i.e. contain
 Use CRBC library in the Yee scheme
 -----------------------------------
 
-The CRBC libary is initialized right before the time iteration::
+The CRBC libary is initialized before the time stepping begins ::
 
   void *ptr_crbc;
   crbc_init(&ptr_crbc,dx,dy,dz,nx,ny,nz,ioff_ex,ioff_ey,ioff_ez, MAXIMUM_ITERATION, dt, LIGHT_SPEED);
@@ -26,7 +32,10 @@ The CRBC libary is initialized right before the time iteration::
       ...
       }
 
-Basic information if passed from Yee Scheme solver to CRBC through crbc_init(). All CRBC related information can be accessed through pointer ptr_crbc. ioff_ex, ioff_ey, ioff_ez defines the leading dimension of the E field arrays, since in the ToyFDTD2, the Ex, Ey, Ez file are defined as the following::
+Basic information if passed from Yee Scheme solver to CRBC through crbc_init(). 
+All CRBC related information can be accessed through the pointer ptr_crbc. 
+*ioff_ex*, *ioff_ey*, *ioff_ez* defines the leading dimension of the E field 
+arrays, since in the ToyFDTD2, the Ex, Ey, Ez file are defined as the following ::
 
   #define Ex(I,J,K) ex[ioff_ex*(I) + (nz+1)*(J) + (k)]
   #define Ey(I,J,K) ey[ioff_ey*(I) + (nz+1)*(J) + (k)]
@@ -45,7 +54,9 @@ The actual computation of the CRBC is done at the end of the time iteration::
   computeboundary(ex,ey,ez,&ptr_crbc);
   }// end mainloop
 
-We add variable vtkfilename to hold the filenames for VTK files output, and use writeefield() to write the VTK files to the disk. Those utility functions are defined in external_c_codes.c, to use them::
+We add the variable *vtkfilename* to hold the filenames for VTK files output, and use 
+*writeefield()* to write the VTK files to the disk. These utility functions are 
+defined in external_c_codes.c and can be called in the following way ::
 
   sprintf(vtkfilename,"CRBC_%08d_Ez.vtk",iteration);         
   writeefield(ex,ey,ez,3,&ptr_crbc,vtkfilename);
@@ -62,7 +73,12 @@ In external_c_codes.c, we need to set at which we are going to apply CRBC. This 
   d->boundaries[CRBC_ZLeft]  = CRBC_PEC;
   d->boundaries[CRBC_ZRight] = CRBC_PEC;
 
-In this case, only the X+ side is an open end, the rest of the boundaries are all PEC. If we want to do a free space scattering problem, we just need to change all boundaries to 'CRBC_CRBC'. In order to obtain a reliable error bound for long time simulation, the CRBC library need to know the total time(=MAXIMUM_ITERATION*dt) and the initial distance from the source to the CRBC faces. The latter is set in setup_crbc()::
+In this case, only the X+ side is an open end, the rest of the boundaries are all PEC.
+If we want to do a free space scattering problem, we just need to change all 
+boundaries to 'CRBC_CRBC'. In order to obtain a reliable error bound for long time
+simulation, the CRBC library need to know the total time(=MAXIMUM_ITERATION*dt) 
+and the initial distance from the source to the CRBC faces. The latter is set in 
+setup_crbc()::
 
   // Now set up the faces. Start by looping over all of the possible faces. We
   // follow the order given in CRBC_Side, so 
@@ -95,12 +111,13 @@ In this case, only the X+ side is an open end, the rest of the boundaries are al
   break;
   }
 
-The Yee(modified) solver communicates with CRBC library through one layers of data, and those indices are defined in::
+The modified Yee solver communicates with CRBC library through one layer of data,
+whose indices are defined in::
 
   crbc_low_index[];
   crbc_high_index[];
 
-Those indices define for every CRBC face, every component of E field(Ex,Ey,Ez), the Yee cell data to communicate iwth CRBC library. That is all the E field component on the Yee cell layer at which we are going to apply CRBC.
+These indices are defined each CRBC face on all three E field components. 
 
 .. _fig_3D:
 .. figure:: 3D_grid.png
@@ -111,9 +128,8 @@ Those indices define for every CRBC face, every component of E field(Ex,Ey,Ez), 
 
    One layer of Yee cell data to communicate with CRBC library.
 
-On each Yee cell, the field variables are defined as usual shown below.
+On each Yee cell, the field variables are defined as shown below.
 
-.. _fig_yee_cell:
 .. figure:: cell.png
   :align: center
   :figwidth: 500 px
@@ -122,17 +138,21 @@ On each Yee cell, the field variables are defined as usual shown below.
 
   Spatial configuration of a Yee cell.
 
-Note that one has to be careful with and modify those indices, especially when sometimes indices starts from 1 instead of 0 and/or the E and H field are defined different than above.
-
 Outputs
 -------
 
-The output VTK files(view in paraview) at different time should look like
+The output VTK files can be viewed in Paraview and the following movie was generated
+by cutting out a strip of the wave guide.
 
-.. _fig_WG:
-.. figure:: wg02.png
-.. figure:: wg04.png
-.. figure:: wg06.png
-.. figure:: wg08.png
+.. raw:: html
 
-   One open end wavguide using CRBC library.
+  <div style="text-align: center">
+    <iframe width="600" height="450" src="https://www.youtube.com/embed/l8ftV6-vZrQ" frameborder="0" allowfullscreen></iframe>
+  </div> 
+
+More Information
+----------------
+
+For more detailed information about implementing the DAB/CRBC library in 3D with
+the Yee scheme, please refer to :doc:`../3D_Yee_example_in_C`.
+

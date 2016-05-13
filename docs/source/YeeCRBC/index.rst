@@ -52,6 +52,7 @@ User Guides
 .. toctree::
    :maxdepth: 2
 
+   quick_start/index
    install
    supported_problems
    gen_use
