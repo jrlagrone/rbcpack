@@ -61,10 +61,17 @@ The code is released under the LGPL v3. See http://www.gnu.org/licenses/lgpl-3.0
 If a different license is required, please contact us.
 
 
-Acknowledgments
-^^^^^^^^^^^^^^^
+Acknowledgments and Contributors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This work was supported in part by ARO Grant W911NF-09-1-0344 and DoD STTR A11A-015-0067. 
 All conclusions are those of the authors and do not necessarily reflect
 the views of the ARO or DoD.
+
+.. toctree::
+   :hidden:
+
+   contrib
+
+We would also like to acknowledge the :doc:`rbcpack contributors <contrib>`.
 
