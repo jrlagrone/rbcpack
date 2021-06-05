@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-D FDTD code with CRBC/DAB Boundary Conditions &#8212; RBCPack  documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3-D FDTD code with CRBC/DAB Boundary Conditions" href="3D_Yee_example_in_C.html" />
+    <link rel="prev" title="Examples" href="examples.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          rbcpack</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Components <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#downloads-and-respository">Downloads and Respository</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contrib.html">rbcpack Contributors</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Current Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">2-D FDTD code with CRBC/DAB Boundary Conditions</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li><a class="reference internal" href="#what-this-program-does">What this program does</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-commented-program">The commented program</a><ul>
+<li><a class="reference internal" href="#include-files">Include files</a></li>
+<li><a class="reference internal" href="#data-structures">Data structures</a></li>
+<li><a class="reference internal" href="#function-prototypes">Function prototypes</a></li>
+<li><a class="reference internal" href="#main-routine">Main routine</a></li>
+<li><a class="reference internal" href="#initialize-function">Initialize function</a></li>
+<li><a class="reference internal" href="#finalize-function">Finalize function</a></li>
+<li><a class="reference internal" href="#setup-crbc-function">setup_crbc function</a></li>
+<li><a class="reference internal" href="#computee-function">computeE function</a></li>
+<li><a class="reference internal" href="#computeh-function">computeH function</a></li>
+<li><a class="reference internal" href="#computeboundary-function">computeBoundary Function</a></li>
+<li><a class="reference internal" href="#writeezfield-function">writeEzField function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#output">Output</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="examples.html" title="Previous Chapter: Examples"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; Examples</span>
+    </a>
+  </li>
+  <li>
+    <a href="3D_Yee_example_in_C.html" title="Next Chapter: 3-D FDTD code with CRBC/DAB Boundary Conditions"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">3-D FDTD code... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary">  <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#downloads-and-respository">Downloads and Respository</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="index.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#documentation">Documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html#user-guides">User Guides</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#known-issues">Known Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#theory-results-and-publications">Theory, Results, and Publications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contrib.html">rbcpack Contributors</a></li>
+</ul>
+
+<form action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+        </div>
+      </div>
+    <div class="body col-md-9 content" role="main">
+      
+  <div class="section" id="d-fdtd-code-with-crbc-dab-boundary-conditions">
+<h1>2-D FDTD code with CRBC/DAB Boundary Conditions<a class="headerlink" href="#d-fdtd-code-with-crbc-dab-boundary-conditions" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial explains the code <a class="reference external" href="https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/2d_yee/yee_TM.c">yee_TM.c</a>.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This C code implements the finite difference time-domain solution of
+Maxwell’s equations (curl formulation) for a transverse-magnetic problem.
+The grid is terminated using Double Absorbing Boundaries (DAB).</p>
+<p>This is meant to serve as an example of how one might use the CRBC/DAB
+library. As such the Yee algorithm used is as simple as is practical to
+achieve this purpose. Furthermore, when it is an option, we have opted
+for clarity rather than performance. We intend this to serve as a guide
+to using the CRBC/DAB library.</p>
+<div class="section" id="what-this-program-does">
+<h3>What this program does<a class="headerlink" href="#what-this-program-does" title="Permalink to this headline">¶</a></h3>
+<p>For this example, we consider a set of transverse-magnetic Maxwell’s equations in
+a homogeneous, isotropic, dielectric material is given by</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  \frac{\partial \mathbf{H}}{\partial t} &amp;= - \frac{1}{\mu}  \nabla \times \mathbf{E}, \\
+  \frac{\partial \mathbf{E}}{\partial t}&amp;= \frac{1}{\varepsilon} \nabla \times \mathbf{H},
+\end{align}</div><p>where</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  E_x &amp;= 0, \\
+  E_y &amp;= 0, \\
+  H_z &amp;= 0.
+\end{align}</div><p id="discretization">To discretize these equations using Yee’s scheme on a rectangular
+domain <span class="math notranslate nohighlight">\([x_L, x_R] \times [y_L, y_R]\)</span> with mesh spacings
+of <span class="math notranslate nohighlight">\(\Delta x\)</span> and <span class="math notranslate nohighlight">\(\Delta y\)</span>, in the
+<span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> directions, respectively, we define</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  x_i &amp;= x_L + i\Delta x, \\
+  y_j &amp;= y_L + j\Delta y
+\end{align}</div><p>We choose a time step size, <span class="math notranslate nohighlight">\(\Delta t\)</span>, satisfying</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  \Delta t \leq \frac{1}{c \sqrt{\frac{1}{(\Delta x)^2} + \frac{1}{(\Delta y)^2}}},
+\end{align}</div><p>with the wave speed given by</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  c = \frac{1}{\sqrt{\varepsilon \mu}}.
+\end{align}</div><p>Letting</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  t_n = n \Delta t,
+\end{align}</div><p>the fields are approximated on the staggered space time grids:</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  E_z^{i,j,n+\frac{1}{2}} &amp; \sim E_z(x_i,y_j,t_{n+\frac{1}{2}}), \\
+  H_x^{i,j+\frac{1}{2},n} &amp; \sim H_x(x_i,y_{j+\frac{1}{2}},t_n), \\
+  H_y^{i+\frac{1}{2},j,n} &amp; \sim H_y(x_{i+\frac{1}{2}},y_j,t_n),
+\end{align}</div><p>where we require that the domain is terminated such that the <span class="math notranslate nohighlight">\(E_z\)</span>
+component is on the boundaries. This corresponds to having an integer number of
+Yee cells that have <span class="math notranslate nohighlight">\(E_z\)</span> points located on the corners.</p>
+<p>Finally, the fields are evolved with</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+   H_x^{i,j+\frac{1}{2},k+\frac{1}{2},n+1}  = H_x^{i,j+\frac{1}{2},k+\frac{1}{2},n}
+   &amp; - \frac{\Delta t}{\mu \Delta y} \left(E_z^{i,j+1,k+\frac{1}{2},n+\frac{1}{2}}
+   - E_z^{i,j,k+\frac{1}{2},n+\frac{1}{2}}    \right),  \\
+   % % % %
+   H_y^{i+\frac{1}{2},j,k+\frac{1}{2},n+1}  = H_y^{i+\frac{1}{2},j,k+\frac{1}{2},n}
+   &amp; + \frac{\Delta t}{\mu \Delta x} \left(E_z^{i+1,j,k+\frac{1}{2},n+\frac{1}{2}}
+   - E_z^{i,j,k+\frac{1}{2},n+\frac{1}{2}} \right), \\
+   % % % %
+   E_z^{i,j,k+\frac{1}{2},n+\frac{1}{2}}  = E_z^{i,j,k+\frac{1}{2},n-\frac{1}{2}}
+   &amp; + \frac{\Delta t}{\varepsilon \Delta x}  \left(H_y^{i+\frac{1}{2},j,k+\frac{1}{2},n}
+   - H_y^{i-\frac{1}{2},j,k+\frac{1}{2},n} \right)   \\
+   &amp; - \frac{\Delta t}{\varepsilon \Delta y}  \left(H_x^{i,j+\frac{1}{2},k+\frac{1}{2},n}
+   - H_y^{i,j-\frac{1}{2},k-\frac{1}{2},n} \right).
+\end{align}</div><p>We drive the simulation with a impulsive point source that takes the form of
+a differentiated Gaussian. We place this source at the center of the computational
+domain in the <span class="math notranslate nohighlight">\(E_z\)</span> field and implement it as a soft source.</p>
+<p>To make the problem more interesting, we place a rectangular and “L” shaped
+scatterer in the domain so that they form a channel. We define this scatterer to
+be a perfect electric conductor. For a configuration of the layout see
+the <a class="reference internal" href="#fig-scatterer"><span class="std std-ref">Domain configuration.</span></a></p>
+<div class="figure align-center" id="id1" style="width: 500px">
+<span id="fig-scatterer"></span><a class="reference internal image-reference" href="../_images/scatterer.png"><img alt="image of the scatterer in the wave guide." src="../_images/scatterer.png" style="width: 450px;" /></a>
+<p class="caption"><span class="caption-text">Domain configuration.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+</div>
+<div class="section" id="the-commented-program">
+<h2>The commented program<a class="headerlink" href="#the-commented-program" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="include-files">
+<h3>Include files<a class="headerlink" href="#include-files" title="Permalink to this headline">¶</a></h3>
+<p>We will require the following:</p>
+<p>For output, namely <code class="docutils literal notranslate"><span class="pre">printf()</span></code>, we need</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<p>For the definitions of <code class="docutils literal notranslate"><span class="pre">sqrt()</span></code>, <code class="docutils literal notranslate"><span class="pre">fabs()</span></code>, etc. we use</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;math.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<p>We need the standard libraries for <code class="docutils literal notranslate"><span class="pre">malloc()</span></code>, <code class="docutils literal notranslate"><span class="pre">free()</span></code>, etc.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+<p>To get the 2D interface to the CRBC/DAB library
+(see <a class="reference external" href="https://bitbucket.org/jlagrone/yee-crbc-testing/src/default/src/CRBC/2d_crbc_api.h?at=default/">2d_crbc_api.h</a>)</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;2d_crbc_api.h&gt;</span><span class="cp"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="data-structures">
+<h3>Data structures<a class="headerlink" href="#data-structures" title="Permalink to this headline">¶</a></h3>
+<p>We define a struct to hold all of the data needed for the Yee scheme.
+The only thing we do differently from what might be included in a typical Yee scheme
+is to include an array of boundary types that the CRBC library requires. To do this we
+utilize the type <code class="docutils literal notranslate"><span class="pre">CRBC2d_Boundaries_t</span></code> defined in the library interface.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span> <span class="n">yeeData</span> <span class="p">{</span>
+
+  <span class="c1">// constants (MKS units)</span>
+  <span class="kt">double</span> <span class="n">pi</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">C</span><span class="p">;</span>     <span class="c1">// speed of light (m/s)</span>
+  <span class="kt">double</span> <span class="n">mu0</span><span class="p">;</span>   <span class="c1">// permeability (V*s/(A*m))</span>
+  <span class="kt">double</span> <span class="n">eps0</span><span class="p">;</span>  <span class="c1">// permittivity (F/m)</span>
+
+  <span class="c1">// relative permeability</span>
+  <span class="kt">double</span> <span class="n">epsR</span><span class="p">;</span> <span class="c1">// 1.0 corresponds to a vacuum</span>
+
+  <span class="c1">// number of time steps</span>
+  <span class="kt">int</span> <span class="n">ntsteps</span><span class="p">;</span>
+
+  <span class="c1">// grid size</span>
+  <span class="kt">int</span> <span class="n">imax</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">jmax</span><span class="p">;</span>
+
+  <span class="c1">// grid spacing in each direction</span>
+  <span class="kt">double</span> <span class="n">dx</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">dy</span><span class="p">;</span>
+
+  <span class="c1">// time step size, (we&#39;ll use 0.99*CFL)</span>
+  <span class="kt">double</span> <span class="n">dt</span><span class="p">;</span>
+
+  <span class="c1">// boundary conditions</span>
+  <span class="n">CRBC2d_Boundaries_t</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+
+  <span class="c1">// source parameters</span>
+  <span class="kt">double</span> <span class="n">tw</span><span class="p">;</span>      <span class="c1">// pulse width</span>
+  <span class="kt">double</span> <span class="n">t0</span><span class="p">;</span>      <span class="c1">// delay</span>
+  <span class="kt">double</span> <span class="n">amp</span><span class="p">;</span>     <span class="c1">// Amplitude</span>
+
+  <span class="c1">// specify how often to generate output (in time steps)</span>
+  <span class="kt">int</span> <span class="n">save_freq</span><span class="p">;</span>
+
+  <span class="c1">// H &amp; E Field components</span>
+  <span class="kt">double</span> <span class="o">**</span><span class="n">Hx</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="o">**</span><span class="n">Hy</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="o">**</span><span class="n">Ez</span><span class="p">;</span>
+
+  <span class="c1">// permittivity, permeability</span>
+  <span class="kt">double</span> <span class="n">epsilon</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">mu</span><span class="p">;</span>
+
+  <span class="c1">// a flag so we know if data has been allocated or not</span>
+  <span class="kt">int</span> <span class="n">flag</span><span class="p">;</span>
+
+  <span class="c1">// update coefficients</span>
+  <span class="kt">double</span> <span class="n">CE</span><span class="p">,</span> <span class="n">CH</span><span class="p">;</span>
+
+<span class="p">}</span> <span class="n">yeeData</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="function-prototypes">
+<h3>Function prototypes<a class="headerlink" href="#function-prototypes" title="Permalink to this headline">¶</a></h3>
+<p>We declare the following function prototypes, which we will later define.</p>
+<p>A function to allocate memory, generate parameters, etc.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A function to deallocate memory</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">finalize</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A function to setup CRBC parameters. This differs from a typical Yee implementation.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">setup_crbc</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="n">YeeCrbcUpdater</span> <span class="o">**</span><span class="n">upd</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A function to compute the E-field updates</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">computeE</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">tstep</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A function to compute the H-field updates</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">computeH</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A function to compute the boundary updates (E-field only). This also differs
+from a typical Yee implementation.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">computeBoundary</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="n">YeeCrbcUpdater</span> <span class="o">*</span><span class="n">upd</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Finally, a function to write Ez field output</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">writeEzField</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="kt">int</span> <span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="main-routine">
+<h3>Main routine<a class="headerlink" href="#main-routine" title="Permalink to this headline">¶</a></h3>
+<p>First we declare the variables we need.
+We also perform a primitive command line input check to enable the Ez field to
+be written out to files periodically. This feature is off by default because it
+generates approximately 1.2 GB of files.
+Note the that <code class="docutils literal notranslate"><span class="pre">CrbcUpdater2d</span></code> type is
+provided by the CRBC library and we need to declare it as a pointer because at
+this time its size is unknown. We will initialize it at a later point after
+we have set the simulation parameters.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">tstep</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">norm</span><span class="p">,</span> <span class="n">enorm</span><span class="p">,</span> <span class="n">hnorm</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">write_output_files</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// read in input to see if we should write output files. If output files are</span>
+  <span class="c1">// enabled this program writes out the Ez field 450 times. Each file is</span>
+  <span class="c1">// file is approximately 2.6 MB, so this generates about 1.2 GB of data.</span>
+  <span class="c1">// By default, the file output is turned off.</span>
+  <span class="c1">// There is only one option, so for simplicity we&#39;ll just assume that if we</span>
+  <span class="c1">// receive any command line option, then we should enable output instead of</span>
+  <span class="c1">// actually parsing and identifying a specific option.</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;The Ez field will be saved. </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+    <span class="n">write_output_files</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">int</span> <span class="n">tstep</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">norm</span><span class="p">,</span> <span class="n">enorm</span><span class="p">,</span> <span class="n">hnorm</span><span class="p">;</span>
+
+  <span class="c1">// declare a yee data structure</span>
+  <span class="n">yeeData</span> <span class="n">data</span><span class="p">;</span>
+
+  <span class="c1">// declare a boundary updater object.</span>
+  <span class="c1">// This needs to be a pointer because the size is unknown at this time and will</span>
+  <span class="c1">// be initialized later.</span>
+  <span class="n">CrbcUpdater2d</span> <span class="o">*</span><span class="n">boundary_updater</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Next, we set the basic simulation parameters</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="c1">// relative permeability</span>
+<span class="n">data</span><span class="p">.</span><span class="n">epsR</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">;</span> <span class="c1">// 1.0 corresponds to a vacuum</span>
+
+<span class="c1">// number of time steps</span>
+<span class="n">data</span><span class="p">.</span><span class="n">ntsteps</span> <span class="o">=</span> <span class="mi">4500</span><span class="p">;</span>
+
+<span class="c1">// grid size</span>
+<span class="c1">// NOTE: Field Value Locations</span>
+<span class="c1">//</span>
+<span class="c1">// Ez - at (i, j, k + 1/2)</span>
+<span class="c1">//</span>
+<span class="c1">// Hx - at (i, j + 1/2, k + 1/2)</span>
+<span class="c1">// Hy - at (i + 1/2, j, k + 1/2)</span>
+<span class="n">data</span><span class="p">.</span><span class="n">imax</span> <span class="o">=</span> <span class="mi">900</span><span class="p">;</span>
+<span class="n">data</span><span class="p">.</span><span class="n">jmax</span> <span class="o">=</span> <span class="mi">300</span><span class="p">;</span>
+
+<span class="c1">// grid spacing in each direction</span>
+<span class="n">data</span><span class="p">.</span><span class="n">dx</span> <span class="o">=</span> <span class="mf">5e-4</span><span class="p">;</span>
+<span class="n">data</span><span class="p">.</span><span class="n">dy</span> <span class="o">=</span> <span class="mf">5e-4</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The boundary conditions are set using the <code class="docutils literal notranslate"><span class="pre">CRBC2d_Boundaries_t</span></code>
+enumeration type provided by the CRBC library.  At this time,
+the supported boundary types are</p>
+<ul class="simple">
+<li><p><cite>CRBC2d_DIR</cite>  — Homogeneous Dirichlet</p></li>
+<li><p><cite>CRBC2d_NEUM</cite> — Homogeneous Neumann</p></li>
+<li><p><cite>CRBC2d_CRBC</cite> — Complete Radiation Boundary Condition (implemented as a DAB)</p></li>
+</ul>
+<p>The library also provides enumerations that list the valid sides with the <code class="docutils literal notranslate"><span class="pre">CRBC_Side_t</span></code>
+type, they are</p>
+<ul class="simple">
+<li><p><cite>CRBC_XLeft</cite></p></li>
+<li><p><cite>CRBC_XRight</cite></p></li>
+<li><p><cite>CRBC_YLeft</cite></p></li>
+<li><p><cite>CRBC_YRight</cite></p></li>
+</ul>
+<p>Here, we’ll set the boundary conditions so that we a waveguide with parallel
+PEC plates with normals in the y-direction.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="p">.</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC2d_XLeft</span><span class="p">]</span>  <span class="o">=</span> <span class="n">CRBC2d_CRBC</span><span class="p">;</span>
+<span class="n">data</span><span class="p">.</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC2d_XRight</span><span class="p">]</span> <span class="o">=</span> <span class="n">CRBC2d_CRBC</span><span class="p">;</span>
+<span class="n">data</span><span class="p">.</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC2d_YLeft</span><span class="p">]</span>  <span class="o">=</span> <span class="n">CRBC2d_DIR</span><span class="p">;</span>
+<span class="n">data</span><span class="p">.</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC2d_YRight</span><span class="p">]</span> <span class="o">=</span> <span class="n">CRBC2d_DIR</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Finally, we set the source parameters. For this example we will use an impulsive
+source that takes the form of a differentiated Gaussian. We will center the source in the
+Ex field and implement as a soft source. Additionally, we set the the frequency
+at which we generate output and call the <code class="docutils literal notranslate"><span class="pre">initialize</span></code> function to calculate the
+rest of the parameters such as the time step size.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="c1">// source parameters</span>
+<span class="n">data</span><span class="p">.</span><span class="n">tw</span> <span class="o">=</span> <span class="mf">5E-11</span><span class="p">;</span>           <span class="c1">// pulse width</span>
+<span class="n">data</span><span class="p">.</span><span class="n">tO</span> <span class="o">=</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">data</span><span class="p">.</span><span class="n">tw</span><span class="p">;</span>   <span class="c1">// delay (this needs to be &gt;= 4*tw to be smooth)</span>
+<span class="n">data</span><span class="p">.</span><span class="n">amp</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">;</span>           <span class="c1">// Amplitude</span>
+
+<span class="c1">// specify how often to generate output (in time steps)</span>
+<span class="n">data</span><span class="p">.</span><span class="n">save_freq</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+
+<span class="c1">// allocate memory and compute the remaining parameters</span>
+<span class="n">initialize</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Now, we need to setup the boundary updater. The updater has 3 basic
+parameters:</p>
+<ul class="simple">
+<li><p>delta — The minimum separation of each boundary face from sources, scatterers, and other inhomogeneities.</p></li>
+<li><p>T     — The total time being simulated.</p></li>
+<li><p>P     — The number of recursions to use in approximating the boundary condition. (This can be chosen by providing a tolerance)</p></li>
+</ul>
+<p>It additionally needs to know the wave speed, <em>c</em>, and the boundary conditions
+on the rest of the domain. Finally, it needs to know some properties
+of the discretization such as the time step size, mesh sizes, and the
+indexing for each face with a CRBC boundary.
+Each of these is discussed in more detail in the <code class="docutils literal notranslate"><span class="pre">setup_crbc</span></code> function.</p>
+<p>Note that we need to pass the reference to the boundary_updater pointer because
+it is currently uninitialized.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">setup_crbc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">boundary_updater</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Finally, we can run the simulation by stepping the <strong>H</strong> fields followed by the
+<strong>E</strong> fields and then applying the boundary updates to the <strong>E</strong> fields from the
+CRBC library as needed and repeating. We also generate some output at the
+requested intervals.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="c1">// Start time stepping</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">tstep</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span> <span class="n">tstep</span> <span class="o">&lt;=</span> <span class="n">data</span><span class="p">.</span><span class="n">ntsteps</span><span class="p">;</span> <span class="o">++</span><span class="n">tstep</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="c1">// compute the updates to the H-field</span>
+  <span class="n">computeH</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">);</span>
+
+  <span class="c1">// compute the updates to the E-field</span>
+  <span class="n">computeE</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">tstep</span><span class="p">);</span>
+
+  <span class="c1">// compute the updates to the boundaries of the E-field.</span>
+  <span class="n">computeBoundary</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="n">boundary_updater</span><span class="p">);</span>
+
+  <span class="c1">// print output if needed</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">tstep</span> <span class="o">%</span> <span class="n">data</span><span class="p">.</span><span class="n">save_freq</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="c1">// print out a norm to the screen.</span>
+    <span class="n">enorm</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="n">hnorm</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+
+    <span class="c1">// loop over Ez</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">data</span><span class="p">.</span><span class="n">imax</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span><span class="o">&lt;</span><span class="n">data</span><span class="p">.</span><span class="n">jmax</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">enorm</span> <span class="o">+=</span> <span class="n">data</span><span class="p">.</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="p">.</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">];</span>
+
+    <span class="c1">// loop over Hx</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">data</span><span class="p">.</span><span class="n">imax</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span><span class="o">&lt;</span><span class="n">data</span><span class="p">.</span><span class="n">jmax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">hnorm</span> <span class="o">+=</span> <span class="n">data</span><span class="p">.</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="p">.</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">];</span>
+
+    <span class="c1">// loop over Hy</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">data</span><span class="p">.</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span><span class="o">&lt;</span><span class="n">data</span><span class="p">.</span><span class="n">jmax</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">hnorm</span> <span class="o">+=</span> <span class="n">data</span><span class="p">.</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="p">.</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">];</span>
+
+    <span class="c1">// compute norm of combined fields</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">epsilon</span><span class="o">*</span><span class="n">enorm</span> <span class="o">+</span> <span class="n">data</span><span class="p">.</span><span class="n">mu</span><span class="o">*</span><span class="n">hnorm</span><span class="p">);</span>
+
+    <span class="c1">// write to screen</span>
+    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;tstep = %i </span><span class="se">\t</span><span class="s"> |E| = %6.5e </span><span class="se">\t</span><span class="s"> |H| = %6.5e </span><span class="se">\t</span><span class="s"> l2 norm = %6.5e </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> \
+           <span class="n">tstep</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">enorm</span><span class="p">),</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">hnorm</span><span class="p">),</span> <span class="n">norm</span><span class="p">);</span>
+
+    <span class="c1">// write all of the Ez field data to a file so we can visualize it if</span>
+    <span class="c1">// requested.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">write_output_files</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">writeEzField</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="n">tstep</span> <span class="o">/</span> <span class="n">data</span><span class="p">.</span><span class="n">save_freq</span><span class="p">);</span>
+    <span class="p">}</span>
+
+  <span class="p">}</span> <span class="c1">// end output</span>
+</pre></div>
+</div>
+<p>After doing the updates, we demonstrate the ability to save and restart the
+boundary updater. This capability requires the HDF5 library. When building the
+CRBC library, HDF5 is optional, so this is only enabled when this option is turned
+on.</p>
+<p>This will write out the current state of the boundary library to
+several h5 files. In this case, it will save a file
+called hdf5_save_test.h5 For demonstration
+purposes, we delete the current boundary updater object to free all of the memory
+associated to it and then create a new boundary updater object in its place using
+the saved data half way through the simulation.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>  <span class="c1">// test the restart capability (requires HDF5)</span>
+  <span class="cp">#if USE_HDF5_RESTARTS</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">tstep</span> <span class="o">==</span> <span class="n">data</span><span class="p">.</span><span class="n">ntsteps</span> <span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="c1">// This will write out the current state of the boundary library to</span>
+    <span class="c1">// several h5 files. In this case, it will save a file</span>
+    <span class="c1">// called hdf5_save_test.h5</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">CRBC2d_save_state</span><span class="p">(</span><span class="n">boundary_updater</span><span class="p">,</span> <span class="s">&quot;hdf5_save_test&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+      <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;save_stat() failed </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+    <span class="c1">// delete the updater object to ensure that everything is working</span>
+    <span class="c1">// correctly ...</span>
+    <span class="n">CRBC2d_delete_updater</span><span class="p">(</span><span class="n">boundary_updater</span><span class="p">);</span>
+
+    <span class="c1">// Now restart. This is an alternative way to generate a boundary updater</span>
+    <span class="c1">// object if a previously saved state exists.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">CRBC2d_restart</span><span class="p">(</span><span class="o">&amp;</span><span class="n">boundary_updater</span><span class="p">,</span> <span class="s">&quot;hdf5_save_test&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+      <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;restart() failed </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+  <span class="p">}</span>
+  <span class="cp">#endif</span>
+
+
+<span class="p">}</span> <span class="c1">// finished time stepping</span>
+</pre></div>
+</div>
+<p>After the time stepping has been completed, we need to free the dynamically
+allocated memory before terminating the program.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>  <span class="c1">// free the memory associated with the solver</span>
+  <span class="n">finalize</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">);</span>
+
+  <span class="c1">// free the memory associated with the boundary updater</span>
+  <span class="n">CRBC_delete_updater</span><span class="p">(</span><span class="n">boundary_updater</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+
+<span class="p">}</span> <span class="c1">// end main</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="initialize-function">
+<h3>Initialize function<a class="headerlink" href="#initialize-function" title="Permalink to this headline">¶</a></h3>
+<p>We use this function primarily to allocate the memory to store each of the field
+components. Note that we are using multidimensional arrays simply for clarity,
+but this should probably not be done in applications were performance is important.</p>
+<p>Based on the <a class="reference internal" href="yee_mpi.html#discretization"><span class="std std-ref">discretization</span></a> presented, we have</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  (imax) \cdot (jmax) \cdot (kmax-1) &amp; &amp; E_z \text{ field values} \\
+  (imax) \cdot (jmax-1) \cdot (kmax-1) &amp; &amp; H_x \text{ field values} \\
+  (imax-1) \cdot (jmax) \cdot (kmax-1) &amp; &amp; H_y \text{ field values} \\
+\end{align}</div><p>Additionally, we compute the constants that are used in the field update equations.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">imax</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">jmax</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">;</span>
+
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">pi</span> <span class="o">=</span> <span class="mf">3.14159265358979</span><span class="p">;</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">C</span> <span class="o">=</span> <span class="mf">2.99792458e8</span><span class="p">;</span>
+
+  <span class="c1">// time step size, (we&#39;ll use 0.99*CFL)</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">0.99</span><span class="o">/</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">C</span><span class="o">*</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="o">*</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="o">*</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">)));</span>
+
+  <span class="c1">// calculate free space eps and mu</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">mu0</span> <span class="o">=</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">pi</span> <span class="o">*</span> <span class="mf">1.0E-7</span><span class="p">;</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">eps0</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">C</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">C</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">mu0</span><span class="p">);</span>
+
+  <span class="c1">// calculate material epsilon and mu</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">epsR</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">eps0</span><span class="p">;</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">mu</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">mu0</span><span class="p">;</span>
+
+  <span class="c1">// calculate update coefficients</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">CE</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dt</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">epsilon</span><span class="p">;</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">CH</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dt</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">mu0</span><span class="p">;</span>
+
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="o">***</span><span class="p">)</span> <span class="n">malloc</span><span class="p">((</span><span class="n">imax</span><span class="p">)</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span><span class="p">));</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="o">**</span><span class="p">)</span> <span class="n">malloc</span><span class="p">((</span><span class="n">jmax</span><span class="p">)</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span><span class="p">));</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="o">***</span><span class="p">)</span> <span class="n">malloc</span><span class="p">((</span><span class="n">imax</span><span class="p">)</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span><span class="p">));</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="o">**</span><span class="p">)</span> <span class="n">malloc</span><span class="p">((</span><span class="n">jmax</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span><span class="p">));</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="o">***</span><span class="p">)</span> <span class="n">malloc</span><span class="p">((</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span><span class="p">));</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="o">**</span><span class="p">)</span> <span class="n">malloc</span><span class="p">((</span><span class="n">jmax</span><span class="p">)</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span><span class="p">));</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="finalize-function">
+<h3>Finalize function<a class="headerlink" href="#finalize-function" title="Permalink to this headline">¶</a></h3>
+<p>This function is used to free the memory allocated to store the field values.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">finalize</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">free</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+    <span class="p">}</span>
+    <span class="n">free</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">);</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">free</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+    <span class="p">}</span>
+    <span class="n">free</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span><span class="p">);</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">free</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+    <span class="p">}</span>
+    <span class="n">free</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="setup-crbc-function">
+<h3>setup_crbc function<a class="headerlink" href="#setup-crbc-function" title="Permalink to this headline">¶</a></h3>
+<p>This function is used to initialize the interface to the CRBC library. This
+happens in two parts, first we initialize the boundary updater object with the
+basic simulation parameters such as the discretization and wave speed. After we
+have an initialized boundary updater, we need to set up the parameters for each
+of the boundary faces that we want to use the CRBC library to update.</p>
+<p>The first step is straightforward, and we simply provide the total simulation
+time, the grid spacings, the time step size, the wave speed and the boundary
+conditions in the format the CRBC library expects. Note that there are two
+alternative methods that we could use to create a new boundary updater. The
+first is to call <code class="docutils literal notranslate"><span class="pre">CRBC_new_updater_p(...)</span></code>, which does the same thing but changes the
+number of recursions used on the boundary from the default of 5 to the requested
+number. The second is to call <code class="docutils literal notranslate"><span class="pre">CRBC_new_updater_tol(...)</span></code>, in which the minimum
+number of recursions needed to meet the requested tolerance is chosen by the
+library.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">setup_crbc</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="n">CrbcUpdater2d</span> <span class="o">**</span><span class="n">upd</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">l</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">T</span><span class="p">;</span>
+  <span class="kt">double</span> <span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="kt">double</span> <span class="n">delta</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">low_index</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="kt">int</span> <span class="n">high_index</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="kt">int</span> <span class="n">n</span><span class="p">;</span>
+  <span class="n">CRBC2d_Side_t</span> <span class="n">side</span><span class="p">;</span>
+
+
+  <span class="c1">// First we will create a new boundary updater.</span>
+  <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">;</span>
+  <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">;</span>
+  <span class="n">T</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dt</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">ntsteps</span><span class="p">;</span> <span class="c1">// total time is time step size * number of time steps</span>
+  <span class="o">*</span><span class="n">upd</span> <span class="o">=</span> <span class="n">CRBC2d_new_updater_tol</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dt</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">C</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">);</span>
+
+  <span class="c1">// alternatively one can call</span>
+  <span class="c1">// int P = 7;</span>
+  <span class="c1">// upd = CRBC2d_new_updater_p(T, h, d-&gt;dt, d-&gt;C, d-&gt;boundaries, P);</span>
+  <span class="c1">// This does exactly the same thing but changes the number of recursions from</span>
+  <span class="c1">// the default of 5 to 7.</span>
+  <span class="c1">//</span>
+  <span class="c1">// or</span>
+  <span class="c1">// int Pmax = 15;</span>
+  <span class="c1">// double tol = 1e-3;</span>
+  <span class="c1">// upd = CRBC2d_new_updater_tol(T, h, d-&gt;dt, d-&gt;C, d-&gt;boundaries, Pmax, tol);</span>
+  <span class="c1">// Will generate an updater that attempts to satsify the provided tolerance</span>
+  <span class="c1">// and with fewer than Pmax recursions.</span>
+</pre></div>
+</div>
+<p>Before we precede, we’ll print out the properties from the boundary updater to
+make sure they are correct.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;The boundary updater was initialized with the following: </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;  wave speed, c = %e </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">CRBC2d_get_c</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">));</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;  total time, T = %e </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">CRBC2d_get_T</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">));</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;  time step, dt = %e </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">CRBC2d_get_dt</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">));</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;The boundary updater calculated the following: </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;  %i edges </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">CRBC2d_get_num_sides</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">));</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">&quot;  %i corners </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">CRBC2d_get_num_corners</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>Now set up the faces. Start by looping over all of the possible faces. We
+follow the order given in <code class="docutils literal notranslate"><span class="pre">CRBC2d_Side_t</span></code>, so</p>
+<ul class="simple">
+<li><p>l = 0 –&gt; CRBC_XLeft</p></li>
+<li><p>l = 1 –&gt; CRBC_XRight</p></li>
+<li><p>l = 2 –&gt; CRBC_YLeft</p></li>
+<li><p>l = 3 –&gt; CRBC_YRight</p></li>
+</ul>
+<p>First we need to calculate the minimum distance between the boundary and
+source, <cite>delta</cite>. Since we placed the source in the center of the domain, this is
+simply the distance from the boundary to the center of the domain in the
+direction normal to the boundary. Additionally, we need to factor in the location
+of the scatterer if it is present.
+In general, if it is not possible to calculate
+delta directly, using a lower bound for the separation is the safest thing to do,
+but it may result in more work being done that is actually needed to achieve the
+desired accuracy.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">l</span><span class="o">&lt;</span><span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">l</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="k">switch</span> <span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">case</span> <span class="mi">0</span><span class="o">:</span> <span class="c1">// left side in x</span>
+      <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">);</span>
+      <span class="k">break</span><span class="p">;</span>
+
+    <span class="k">case</span> <span class="mi">1</span><span class="o">:</span> <span class="c1">// right side in x</span>
+      <span class="c1">// if the domain is big enough there is a scatterer ...</span>
+      <span class="k">if</span> <span class="p">((</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">&gt;</span> <span class="mi">700</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">&gt;</span> <span class="mi">250</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">-</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">+</span> <span class="mi">250</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">);</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">);</span>
+      <span class="p">}</span>
+
+    <span class="k">case</span> <span class="mi">2</span><span class="o">:</span> <span class="c1">// left side in y</span>
+
+      <span class="c1">// if the domain is big enough there is a scatterer</span>
+      <span class="k">if</span> <span class="p">((</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">&gt;</span> <span class="mi">700</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">&gt;</span> <span class="mi">250</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">-</span> <span class="mi">55</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">break</span><span class="p">;</span>
+
+    <span class="k">case</span> <span class="mi">3</span><span class="o">:</span> <span class="c1">// right side in y</span>
+
+      <span class="c1">// if the domain is big enough there is a scatterer</span>
+      <span class="k">if</span> <span class="p">((</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">&gt;</span> <span class="mi">700</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">&gt;</span> <span class="mi">250</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">-</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">55</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">break</span><span class="p">;</span>
+
+  <span class="p">}</span>
+
+  <span class="c1">// convert the index l to a CRBC2d_Side_t type</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="mi">0</span><span class="o">:</span>
+      <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_XLeft</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">1</span><span class="o">:</span>
+      <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_XRight</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">2</span><span class="o">:</span>
+      <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_YLeft</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">3</span><span class="o">:</span>
+      <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_YRight</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>The CRBC updater library attempts to communicate with the solvers “native”
+indexing scheme, so we need to tell it the upper and lower indexing extents.
+These extents need to include all of the requested variables
+on the boundary face as well the adjacent parallel plane of points in the
+interior of the domain.</p>
+<p>For the left boundary in x, this means we need to include the data
+points of the requested component at i=0 and i=1 and all possible
+indices for j. Therefore, the lower indexing extents are 0 for
+all indices. The boundary updater considers these extents to be inclusive.</p>
+<p>For the right boundary in x, this means we need to include the data
+points of the requested component at i=imax-1 and i=imax-2 along with all of
+the possible indices for j.</p>
+<p>For the left boundary in y, this means we need to include the data
+points of the requested component at j=0 and j=1 along with all of
+the possible indices for i.</p>
+<p>Finally, for the right boundary in y, this means we need to include the data
+points of the requested component at j=jmax-1 and j=jmax-2 along with all of
+the possible indices for i.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">==</span> <span class="n">CRBC2d_CRBC</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="c1">// Set the basic extents and then adjust them based on the side and field</span>
+  <span class="c1">// component. These should be inclusive extents;</span>
+  <span class="n">low_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">low_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="n">high_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="c1">// minus 1 from 0-based indexing</span>
+  <span class="n">high_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+
+  <span class="k">switch</span> <span class="p">(</span><span class="n">side</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="k">case</span> <span class="nl">CRBC2d_XLeft</span><span class="p">:</span>
+      <span class="n">high_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
+      <span class="k">break</span><span class="p">;</span>
+
+    <span class="k">case</span> <span class="nl">CRBC2d_XRight</span><span class="p">:</span>
+      <span class="n">low_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">-</span><span class="mi">2</span><span class="p">;</span>
+
+      <span class="k">break</span><span class="p">;</span>
+
+    <span class="k">case</span> <span class="nl">CRBC2d_YLeft</span><span class="p">:</span>
+      <span class="n">high_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
+      <span class="k">break</span><span class="p">;</span>
+
+    <span class="k">case</span> <span class="nl">CRBC2d_YRight</span><span class="p">:</span>
+      <span class="n">low_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">-</span><span class="mi">2</span><span class="p">;</span>
+
+      <span class="k">break</span><span class="p">;</span>
+
+  <span class="p">}</span> <span class="c1">// end switch side</span>
+</pre></div>
+</div>
+<p>Now, we can initialize the face:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>    <span class="c1">// now initialize the face.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">CRBC2d_init_face</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">low_index</span><span class="p">,</span> <span class="n">high_index</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="p">{</span>
+      <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;Error: init_face(...) failed </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+      <span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="c1">// end if</span>
+<span class="p">}</span> <span class="c1">// end for over possible boundary faces (l)</span>
+</pre></div>
+</div>
+<p>Finally, we print out some information about the recursions. Note that a reflection
+coefficient of -1 indicates that we are not performing any updates on that face.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>  <span class="c1">// now we&#39;ll print out some information about the recursions</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;The faces were initialized with: </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;  Left side in  x is using %i recursions &quot;</span>
+         <span class="s">&quot;with a reflection coefficient of %e </span><span class="se">\n</span><span class="s">&quot;</span>
+         <span class="p">,</span> <span class="n">CRBC2d_get_num_recursions</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_XLeft</span><span class="p">),</span>
+          <span class="n">CRBC2d_get_reflection_coef</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_XLeft</span><span class="p">));</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;  Right side in x is using %i recursions &quot;</span>
+         <span class="s">&quot;with a reflection coefficient of %e </span><span class="se">\n</span><span class="s">&quot;</span>
+         <span class="p">,</span> <span class="n">CRBC2d_get_num_recursions</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_XRight</span><span class="p">),</span>
+         <span class="n">CRBC2d_get_reflection_coef</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_XRight</span><span class="p">));</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;  Left side in  y is using %i recursions &quot;</span>
+         <span class="s">&quot;with a reflection coefficient of %e </span><span class="se">\n</span><span class="s">&quot;</span>
+         <span class="p">,</span> <span class="n">CRBC2d_get_num_recursions</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_YLeft</span><span class="p">),</span>
+         <span class="n">CRBC2d_get_reflection_coef</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_YLeft</span><span class="p">));</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;  Right side in y is using %i recursions &quot;</span>
+         <span class="s">&quot;with a reflection coefficient of %e </span><span class="se">\n</span><span class="s">&quot;</span>
+         <span class="p">,</span> <span class="n">CRBC2d_get_num_recursions</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_YRight</span><span class="p">),</span>
+         <span class="n">CRBC2d_get_reflection_coef</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">,</span> <span class="n">CRBC2d_YRight</span><span class="p">));</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;The maximum reflection coefficient is %e </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+         <span class="n">CRBC2d_get_max_reflection_coef</span><span class="p">(</span><span class="o">*</span><span class="n">upd</span><span class="p">));</span>
+
+<span class="p">}</span> <span class="c1">// end setup_crbc</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="computee-function">
+<h3>computeE function<a class="headerlink" href="#computee-function" title="Permalink to this headline">¶</a></h3>
+<p>This function computes the updates to the <strong>E</strong> field components using the Yee scheme.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">computeE</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">tstep</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">;</span>
+
+  <span class="c1">// compute updates to Ez</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
+       <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">CE</span> <span class="o">*</span> <span class="p">((</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="p">])</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span> \
+                      <span class="o">-</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// add the source term to the center point of the Ez field</span>
+  <span class="c1">// This is a differentiated Gaussian applied as a &quot;soft&quot; source</span>
+  <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">/</span><span class="mi">2</span><span class="p">][</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">amp</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">CE</span> \
+                              <span class="o">*</span> <span class="p">((</span><span class="o">*</span><span class="n">tstep</span><span class="o">*</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dt</span> <span class="o">-</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">t0</span><span class="p">)</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">tw</span><span class="p">)</span> \
+                              <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">pow</span><span class="p">(((</span><span class="o">*</span><span class="n">tstep</span><span class="o">*</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dt</span> <span class="o">-</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">t0</span><span class="p">)</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">tw</span><span class="p">),</span> <span class="mf">2.0</span><span class="p">));</span>
+
+
+  <span class="c1">// add scatter if the domain is large enough</span>
+  <span class="c1">// rectangular with L shapped channel</span>
+  <span class="k">if</span> <span class="p">((</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">&gt;</span> <span class="mi">700</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">&gt;</span> <span class="mi">250</span><span class="p">))</span> <span class="p">{</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">50</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">175</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">45</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">55</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">50</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">250</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">55</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">45</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">230</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">250</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">45</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">55</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="computeh-function">
+<h3>computeH function<a class="headerlink" href="#computeh-function" title="Permalink to this headline">¶</a></h3>
+<p>This function computes the updates to the <strong>H</strong> field components using the Yee scheme.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">computeH</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">;</span>
+
+  <span class="c1">// compute updates to Hx</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">CH</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// compute updates to Hy</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">d</span><span class="o">-&gt;</span><span class="n">Hy</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">CH</span> <span class="o">*</span> <span class="p">((</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span> <span class="o">/</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="computeboundary-function">
+<h3>computeBoundary Function<a class="headerlink" href="#computeboundary-function" title="Permalink to this headline">¶</a></h3>
+<p>This function computes the boundary updates using the CRBC library. To do this,
+we first need to copy the values that have been updated by the Yee algorithm into
+the CRBC updater. We start by looping over all of the possible sides. For each of
+these, the CRBC updater can return the index extents, which we use to copy
+the data into the CRBC library.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">computeBoundary</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="n">CrbcUpdater2d</span> <span class="o">*</span><span class="n">upd</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">low_index</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="kt">int</span> <span class="n">high_index</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="kt">int</span> <span class="n">index</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="kt">int</span> <span class="n">n</span><span class="p">;</span>
+  <span class="n">CRBC2d_Side_t</span> <span class="n">side</span><span class="p">;</span>
+
+  <span class="c1">// first we need to copy the values that have been updated by the Yee algorithm</span>
+  <span class="c1">// into the crbc updater. First we will loop over all of the possible sides.</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">m</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">m</span><span class="o">&lt;</span><span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">m</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="c1">// convert index to CRBC2d_Side type</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="mi">0</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_XLeft</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="k">case</span> <span class="mi">1</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_XRight</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="k">case</span> <span class="mi">2</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_YLeft</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="k">case</span> <span class="mi">3</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_YRight</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">==</span> <span class="n">CRBC2d_CRBC</span><span class="p">)</span> <span class="p">{</span>
+
+      <span class="c1">// get the indices the updater expects as input.</span>
+      <span class="c1">// These indices are inclusive.</span>
+      <span class="n">CRBC2d_get_input_extents</span><span class="p">(</span><span class="n">upd</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">low_index</span><span class="p">,</span> <span class="n">high_index</span><span class="p">);</span>
+
+      <span class="c1">// copy data into the updater</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">low_index</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="n">i</span><span class="o">&lt;=</span><span class="n">high_index</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="n">low_index</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="n">j</span><span class="o">&lt;=</span><span class="n">high_index</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
+          <span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">j</span><span class="p">;</span>
+          <span class="n">CRBC2d_load_face_data</span><span class="p">(</span><span class="n">upd</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="o">&amp;</span><span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]));</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="c1">// end loop over sides</span>
+</pre></div>
+</div>
+<p>Now we can have the CRBC library compute the boundary updates.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="c1">// now we can compute the updates to the boundaries</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">CRBC2d_compute_updates</span><span class="p">(</span><span class="n">upd</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;Error: compute_updates(...) failed </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Finally, we need to copy the new values from the boundary updater into the arrays
+used by the Yee algorithm. To do this, we loop over all the possible sides and
+get the output index extents from the boundary updater. We use these extent
+values to loop over the data arrays and copy the values.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>  <span class="c1">// Now copy the new boundary values into the arrays used by the Yee algorithm</span>
+  <span class="c1">// loop over possible sides</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">m</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">m</span><span class="o">&lt;</span><span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">m</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="c1">// convert index to CRBC2d_Side type</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="mi">0</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_XLeft</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="k">case</span> <span class="mi">1</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_XRight</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="k">case</span> <span class="mi">2</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_YLeft</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="k">case</span> <span class="mi">3</span><span class="o">:</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">CRBC2d_YRight</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">==</span> <span class="n">CRBC2d_CRBC</span><span class="p">)</span> <span class="p">{</span>
+
+      <span class="c1">// get the indices the updater can output.</span>
+      <span class="c1">// These indices are inclusive.</span>
+      <span class="n">CRBC2d_get_output_extents</span><span class="p">(</span><span class="n">upd</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">low_index</span><span class="p">,</span> <span class="n">high_index</span><span class="p">);</span>
+
+      <span class="c1">// copy data into the updater</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="n">low_index</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="n">i</span><span class="o">&lt;=</span><span class="n">high_index</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="n">low_index</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="n">j</span><span class="o">&lt;=</span><span class="n">high_index</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
+          <span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">j</span><span class="p">;</span>
+          <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">CRBC2d_get_new_face_vals</span><span class="p">(</span><span class="n">upd</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">index</span><span class="p">);</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="c1">// end loop over sides</span>
+
+
+<span class="p">}</span> <span class="c1">// end computeBoundary</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="writeezfield-function">
+<h3>writeEzField function<a class="headerlink" href="#writeezfield-function" title="Permalink to this headline">¶</a></h3>
+<p>We use this function to output the <span class="math notranslate nohighlight">\(E_z\)</span> field component to an ASCII VTK
+file format that can be opened with visualization software such as ParaView.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">writeEzField</span><span class="p">(</span><span class="n">yeeData</span> <span class="o">*</span><span class="n">d</span><span class="p">,</span> <span class="kt">int</span> <span class="n">id</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">cells</span><span class="p">;</span>
+
+  <span class="kt">char</span> <span class="n">step</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
+  <span class="kt">char</span> <span class="n">fileBaseName</span><span class="p">[]</span> <span class="o">=</span> <span class="s">&quot;Ez_Field_&quot;</span><span class="p">;</span>
+  <span class="n">sprintf</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="s">&quot;%d&quot;</span><span class="p">,</span> <span class="n">id</span><span class="p">);</span>
+  <span class="n">strcat</span><span class="p">(</span><span class="n">fileBaseName</span><span class="p">,</span> <span class="n">step</span><span class="p">);</span>
+  <span class="n">strcat</span><span class="p">(</span><span class="n">fileBaseName</span><span class="p">,</span> <span class="s">&quot;.vtk&quot;</span><span class="p">);</span>
+
+  <span class="c1">// open the file and write the VTK header information</span>
+  <span class="kt">FILE</span> <span class="o">*</span><span class="n">f</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">fileBaseName</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;# vtk DataFile Version 3.0</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;vtk output</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;ASCII</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;DATASET RECTILINEAR_GRID</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+  <span class="c1">// set the dimensions</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;DIMENSIONS %i %i %i</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+
+  <span class="c1">// save the coordinates</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;X_COORDINATES %i double </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">);</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;%f</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="o">*</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">);</span>
+
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;Y_COORDINATES %i double </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">);</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;%f</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">j</span><span class="o">*</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;Z_COORDINATES %i double </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;0 </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+  <span class="c1">// set up a cell and field</span>
+  <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">;</span>
+  <span class="n">cells</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;CELL_DATA %i</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">cells</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;POINT_DATA %i</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;FIELD FieldData 1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;Ez 1 %i double</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
+
+  <span class="c1">// now write out the data</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+      <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;%f</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">d</span><span class="o">-&gt;</span><span class="n">Ez</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]);</span>
+
+
+  <span class="c1">// close the file</span>
+  <span class="n">fclose</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="output">
+<h2>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
+<div style="text-align: center">
+  <iframe width="600" height="450" src="https://www.youtube.com/embed/ISZ-v8SIFWY" frameborder="0" allowfullscreen></iframe>
+</div><p>The above visualization of the Ez field
+shows on the top the error from a simulation using a tolerance of <span class="math notranslate nohighlight">\(1e-3\)</span>,
+in the middle the error using a tolerance of <span class="math notranslate nohighlight">\(1e-5\)</span>, and on the <span class="math notranslate nohighlight">\(E_z\)</span>
+field on the bottom. The errors were generated by comparing to a simulation run
+on a larger domain with the same parameters (a longer wave guide). Note that the
+color scale for the <span class="math notranslate nohighlight">\(E_z\)</span> field is chosen to be representative of the state
+roughly midway through the simulation. Also note that the error scales are linear.
+The files used to generate this movie can be generated by providing a command line
+option at runtime, for instance</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="p">.</span><span class="o">/</span><span class="n">yee_TM</span><span class="p">.</span><span class="n">x</span> <span class="o">-</span><span class="n">output</span>
+</pre></div>
+</div>
+<p>The following is a truncated sample of the screen output.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">boundary</span> <span class="n">updater</span> <span class="n">was</span> <span class="n">initialized</span> <span class="n">with</span> <span class="n">the</span> <span class="nl">following</span><span class="p">:</span>
+  <span class="n">wave</span> <span class="n">speed</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="mf">2.997925e+08</span>
+  <span class="n">total</span> <span class="n">time</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="mf">5.253903e-09</span>
+  <span class="n">time</span> <span class="n">step</span><span class="p">,</span> <span class="n">dt</span> <span class="o">=</span> <span class="mf">1.167534e-12</span>
+<span class="n">The</span> <span class="n">boundary</span> <span class="n">updater</span> <span class="n">calculated</span> <span class="n">the</span> <span class="nl">following</span><span class="p">:</span>
+  <span class="mi">2</span> <span class="n">edges</span>
+  <span class="mi">0</span> <span class="n">corners</span>
+<span class="n">The</span> <span class="n">faces</span> <span class="n">were</span> <span class="n">initialized</span> <span class="nl">with</span><span class="p">:</span>
+  <span class="n">Left</span> <span class="n">side</span> <span class="n">in</span>  <span class="n">x</span> <span class="n">is</span> <span class="n">using</span> <span class="mi">3</span> <span class="n">recursions</span> <span class="n">with</span> <span class="n">a</span> <span class="n">reflection</span> <span class="n">coefficient</span> <span class="n">of</span> <span class="mf">6.640539e-04</span>
+  <span class="n">Right</span> <span class="n">side</span> <span class="n">in</span> <span class="n">x</span> <span class="n">is</span> <span class="n">using</span> <span class="mi">3</span> <span class="n">recursions</span> <span class="n">with</span> <span class="n">a</span> <span class="n">reflection</span> <span class="n">coefficient</span> <span class="n">of</span> <span class="mf">9.564357e-04</span>
+  <span class="n">Left</span> <span class="n">side</span> <span class="n">in</span>  <span class="n">y</span> <span class="n">is</span> <span class="n">using</span> <span class="mi">5</span> <span class="n">recursions</span> <span class="n">with</span> <span class="n">a</span> <span class="n">reflection</span> <span class="n">coefficient</span> <span class="n">of</span> <span class="o">-</span><span class="mf">1.000000e+00</span>
+  <span class="n">Right</span> <span class="n">side</span> <span class="n">in</span> <span class="n">y</span> <span class="n">is</span> <span class="n">using</span> <span class="mi">5</span> <span class="n">recursions</span> <span class="n">with</span> <span class="n">a</span> <span class="n">reflection</span> <span class="n">coefficient</span> <span class="n">of</span> <span class="o">-</span><span class="mf">1.000000e+00</span>
+<span class="n">The</span> <span class="n">maximum</span> <span class="n">reflection</span> <span class="n">coefficient</span> <span class="n">is</span> <span class="mf">9.564357e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">10</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.43084e-04</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.71082e-06</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">2.17261e-09</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">20</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.58550e-03</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">8.76478e-06</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">1.08993e-08</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">30</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">7.20991e-03</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">4.08908e-05</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.06106e-08</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">40</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">2.94279e-02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.70488e-04</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">2.10223e-07</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">50</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.07180e-01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">6.34234e-04</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">7.79229e-07</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">60</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.47840e-01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">2.10338e-03</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">2.57505e-06</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">70</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.00479e+00</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">6.21205e-03</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">7.57841e-06</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">80</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">2.57999e+00</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.63160e-02</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">1.98361e-05</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">90</span>     <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">5.87854e+00</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.80430e-02</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">4.60941e-05</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">100</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.18606e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">7.85520e-02</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">9.48659e-05</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">110</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">2.11351e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.43146e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">1.72350e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">120</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.31680e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">2.29084e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">2.75115e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">130</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">4.57490e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.19572e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">3.83233e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">140</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">5.56463e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.84126e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">4.61343e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">150</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">6.10928e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.90875e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">4.74384e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">160</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">6.50698e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.31051e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">4.18581e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">170</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">7.41876e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">2.54907e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">3.61089e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">180</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">8.97395e+01</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">2.76852e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">4.09416e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">190</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.05730e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.77805e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.27587e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">200</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.16836e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">4.54163e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">6.16494e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">210</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.22165e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">4.73905e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">6.43711e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">220</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.23991e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">4.51980e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">6.26765e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">230</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.25525e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">4.16101e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.97566e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">240</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.29196e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.83127e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.76410e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">250</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.34828e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.56470e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.66249e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">260</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.39206e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.39236e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.62311e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">270</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.39147e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.37368e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60769e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">280</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.35141e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.48050e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60297e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">290</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.31040e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.59131e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60460e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">300</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.29613e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.63101e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60736e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">310</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.29709e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.62890e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60760e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">320</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.28959e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.64596e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60618e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">330</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.27304e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.68672e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60620e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">340</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.27330e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.69009e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60951e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">350</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.31880e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.58234e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61482e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">360</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.40134e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.35711e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61694e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">370</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.46015e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.16635e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61037e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">380</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.42905e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.24851e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.59847e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">390</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.31251e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.57269e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.59401e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">400</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.21396e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.82067e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60288e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">410</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.23271e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.79194e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61457e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">420</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.32254e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.57503e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61674e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">430</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.37921e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.41226e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61020e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">440</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.36918e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.43243e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60391e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">450</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.32606e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.54882e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60320e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">460</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.29885e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.62315e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60653e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">470</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.30267e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.61635e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60887e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">480</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.31233e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.59073e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60812e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">490</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.31569e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.58252e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60849e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">500</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.34372e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.51395e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61282e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">510</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.40548e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.34162e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61448e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">520</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.43762e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.23352e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60700e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">530</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.38384e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.38249e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.59763e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">540</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.28248e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.65401e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.59833e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">550</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.23479e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.77871e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60742e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">560</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.26905e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.70457e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61296e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">570</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.31474e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.58793e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61087e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">580</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.32941e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.54627e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60818e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">590</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.33929e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.52179e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60962e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">600</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.36585e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.45048e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61063e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">610</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.37870e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.40945e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60694e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">620</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.34936e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.48586e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60276e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">630</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.30379e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.60738e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60391e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">640</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.29171e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.64382e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60877e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">650</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.32037e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.57421e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61158e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">660</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.35418e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.48239e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.61036e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">670</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.36695e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.44384e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60787e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">680</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.36283e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.45405e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60688e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">690</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.35641e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.47197e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60701e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">700</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.34757e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.49504e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60614e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">710</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.32396e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.55566e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60424e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">720</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.28737e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.64877e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60397e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">730</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.26412e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.70887e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60668e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">740</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.27580e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.68398e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60949e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">750</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.30980e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.59721e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60811e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">760</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.34000e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.50872e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.60083e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">770</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.36110e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.43459e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.58810e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">780</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.38204e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.35267e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.57107e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">790</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.39483e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.29196e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.55379e-04</span>
+<span class="n">tstep</span> <span class="o">=</span> <span class="mi">800</span>    <span class="o">|</span><span class="n">E</span><span class="o">|</span> <span class="o">=</span> <span class="mf">1.37480e+02</span>       <span class="o">|</span><span class="n">H</span><span class="o">|</span> <span class="o">=</span> <span class="mf">3.33680e-01</span>       <span class="n">l2</span> <span class="n">norm</span> <span class="o">=</span> <span class="mf">5.54316e-04</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+<div id="sourcelink">
+  <a href="../_sources/YeeCRBC/yee_TM.rst.txt"
+     rel="nofollow">Source</a>
+</div>
+      
+    </p>
+    <p>
+    <a href="../contrib.html">rbcpack Contributors </a><br />
+        &copy; Copyright 2015-2016, rbcpack.org.<br/>
+    </p>
+  </div>
+</footer>
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-71984541-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+</html>

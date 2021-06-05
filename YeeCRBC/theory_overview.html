@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Brief Overview of Theory &#8212; RBCPack  documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Implementation Examples in Matlab" href="matlab_examples.html" />
+    <link rel="prev" title="3D Waveguide Example using ToyFDTD code and the DAB/CRBC Library" href="quick_start/wg.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          rbcpack</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Components <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#downloads-and-respository">Downloads and Respository</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contrib.html">rbcpack Contributors</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Current Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">A Brief Overview of Theory</a><ul>
+<li><a class="reference internal" href="#overview-of-complete-radiation-boundary-conditions">Overview of Complete Radiation Boundary Conditions</a><ul>
+<li><a class="reference internal" href="#advantages">Advantages</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overview-of-the-double-absorbing-boundary">Overview of the Double Absorbing Boundary</a><ul>
+<li><a class="reference internal" href="#id1">Advantages</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discretization-of-the-dab">Discretization of the DAB</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="quick_start/wg.html" title="Previous Chapter: 3D Waveguide Example using ToyFDTD code and the DAB/CRBC Library"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; 3D Waveguide ...</span>
+    </a>
+  </li>
+  <li>
+    <a href="matlab_examples.html" title="Next Chapter: Implementation Examples in Matlab"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">Implementatio... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary">  <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#downloads-and-respository">Downloads and Respository</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="index.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#documentation">Documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="index.html#user-guides">User Guides</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#known-issues">Known Issues</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html#theory-results-and-publications">Theory, Results, and Publications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contrib.html">rbcpack Contributors</a></li>
+</ul>
+
+<form action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+        </div>
+      </div>
+    <div class="body col-md-9 content" role="main">
+      
+  <div class="section" id="a-brief-overview-of-theory">
+<h1>A Brief Overview of Theory<a class="headerlink" href="#a-brief-overview-of-theory" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview-of-complete-radiation-boundary-conditions">
+<h2>Overview of Complete Radiation Boundary Conditions<a class="headerlink" href="#overview-of-complete-radiation-boundary-conditions" title="Permalink to this headline">¶</a></h2>
+<p>The goal is first write down a complete
+representation of the solution away from the interior of our computational
+domain.
+To this end, suppose that  <span class="math notranslate nohighlight">\(u(x,y,t)\)</span> satisfies</p>
+<div class="math notranslate nohighlight" id="equation-half-space-we">
+<span class="eqno">(1)<a class="headerlink" href="#equation-half-space-we" title="Permalink to this equation">¶</a></span>\[\begin{split}    &amp;\frac{\partial^2 u}{\partial t^2} = c^2 \nabla^2 u, \quad x &gt; - \delta,
+      \quad y \in \mathbb{R}^{d-1}, \quad t &gt; 0, \\
+    &amp;u(x,y,0) = 0,\end{split}\]</div>
+<p>for some  <span class="math notranslate nohighlight">\(\delta &gt; 0\)</span>.
+Furthermore, suppose that the field is produced sources, scatterers, and other inhomogeneities located
+in the half space  <span class="math notranslate nohighlight">\(x &lt; -\delta\)</span> and we can account for these effects with the Dirichlet data:</p>
+<div class="math notranslate nohighlight" id="equation-dir-data">
+<span class="eqno">(2)<a class="headerlink" href="#equation-dir-data" title="Permalink to this equation">¶</a></span>\[  u(-\delta, y, t) = g(y,t).\]</div>
+<p>Taking the transverse-Fourier-Laplace transforms, we can write the solution to
+the problem <a class="reference internal" href="#equation-half-space-we">(1)</a>-<a class="reference internal" href="#equation-dir-data">(2)</a> as</p>
+<div class="math notranslate nohighlight">
+\[\hat{u}(x,k,s) = \hat{u}(-\delta,k,s) e^{-(\bar{s}^2 + |k|^2)^{1/2}(x+\delta)},\]</div>
+<p>where  <span class="math notranslate nohighlight">\(k\)</span> are the dual Fourier variables to the transverse spatial coordinates,
+<span class="math notranslate nohighlight">\(| \cdot |\)</span> is the Euclidean norm,  <span class="math notranslate nohighlight">\(s\)</span> is the dual Laplace variable
+to time, and <span class="math notranslate nohighlight">\(\bar{s} = \frac{s}{c}\)</span>.
+The branch of the square root is chosen to have positive real part when the real
+part of  <span class="math notranslate nohighlight">\(s\)</span> is positive.
+We invert the transformed solution with respect to  <span class="math notranslate nohighlight">\(k\)</span> over the hyperplane
+<span class="math notranslate nohighlight">\(\mathbb{R}^{d-1}\)</span> and with respect to  <span class="math notranslate nohighlight">\(s\)</span> over the contour
+<span class="math notranslate nohighlight">\(s = i \omega + \frac{1}{T}\)</span> with  <span class="math notranslate nohighlight">\(\omega\)</span> real and fixed  <span class="math notranslate nohighlight">\(T\)</span>
+(with units of time).
+To accomplish this, set</p>
+<div class="math notranslate nohighlight">
+\[k= \frac{\tilde{k}}{cT}, \qquad \omega = \frac{\tilde{\omega}}{T},\]</div>
+<p>then</p>
+<div class="math notranslate nohighlight" id="equation-sqrt">
+<span class="eqno">(3)<a class="headerlink" href="#equation-sqrt" title="Permalink to this equation">¶</a></span>\[  (\bar{s}^2 + |k|^2)^{1/2} = ((1+i\tilde{\omega})^2 + \tilde{k}^2)^{1/2} = a + ib,\]</div>
+<p>for some  <span class="math notranslate nohighlight">\(a,b \in \mathbb{R}\)</span>. Squaring both sides, we get</p>
+<div class="math notranslate nohighlight">
+\[b = \frac{\tilde{\omega}}{a}, \qquad 1 + \tilde{k}^2 - \tilde{\omega}^2 = a^2 - \frac{\tilde{\omega^2}}{a^2}.\]</div>
+<p>In order to agree with the chosen branch of the square root, we require
+<span class="math notranslate nohighlight">\(a \geq 1\)</span>. Therefore, for some  <span class="math notranslate nohighlight">\(\phi \in [0, \frac{\pi}{2})\)</span>,
+we can write</p>
+<div class="math notranslate nohighlight">
+\[a= \frac{1}{\cos \phi}, \qquad b = \tilde{\omega} \cos \phi.\]</div>
+<p>Substituting back into <a class="reference internal" href="#equation-sqrt">(3)</a>,</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  (\bar{s}^2 + |k|^2)^{1/2} = \bar{s} \cos \phi + \frac{1}{cT} \frac{\sin^2 \phi}{\cos \phi}.
+\end{align}</div><p>Finally, writing the inverse transforms in polar coordinates,
+<span class="math notranslate nohighlight">\(\rho, \theta \in \mathbb{S}^{d-2}\)</span>, in the dual space variables and
+replacing  <span class="math notranslate nohighlight">\(\rho = |k|\)</span> by  <span class="math notranslate nohighlight">\(\rho(\phi, \omega)\)</span>, we have</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  u(x,y,t) = (2 \pi)^{-\frac{d+1}{2}} \int_{0}^{\frac{\pi}{2}} \int_{-\infty}^{\infty}
+             \int_{\mathbb{S}^{d-2}} e^{\psi} \bar{u} \rho^{d-2} \frac{\partial \rho}{\partial \phi}
+              dA(\theta) d\omega d\phi,
+\end{align}</div><p>where</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+   \psi &amp;= \left(i\omega + \frac{1}{T} \right) \left(t- \frac{\cos \phi}{c}(x+\delta) \right)
+          + i \rho(\theta \cdot y) - \frac{1}{cT}\frac{\sin^2 \phi}{\cos \phi}(x+\delta), \\
+   \bar{u} &amp;= \hat{u}\left(-\delta, \rho \theta, \frac{1}{T+i \omega} \right).
+\end{align}</div><p>Setting</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  \Phi(t,y,\phi) =  (2 \pi)^{-\frac{d+1}{2}}  \int_{-\infty}^{\infty} \int_{\mathbb{S}^{d-2}}
+                    e^{\left(i\omega + \frac{1}{T} \right) + i \rho(\theta \cdot y)} \bar{u} \rho^{d-2}
+                    \frac{\partial \rho}{\partial \phi} dA(\theta) d\omega,
+\end{align}</div><p>we can write the complete wave representation of the solution, valid for  <span class="math notranslate nohighlight">\(x &gt; -\delta\)</span>,
+as</p>
+<div class="math notranslate nohighlight" id="equation-complete-wave-rep">
+<span class="eqno">(4)<a class="headerlink" href="#equation-complete-wave-rep" title="Permalink to this equation">¶</a></span>\[  u(x,y,t) = \int_{0}^{\frac{\pi}{2}} \Phi \left( t - \frac{\cos \phi}{c}(x+\delta), y, \phi \right)
+             e^{- \frac{1}{cT}\frac{\sin^2 \phi}{\cos \phi}(x+\delta)} d \phi.\]</div>
+<p>To arrive at an approximate local boundary condition, we can approximate the  <span class="math notranslate nohighlight">\(\phi\)</span>
+integral in <a class="reference internal" href="#equation-complete-wave-rep">(4)</a> by an appropriate quadrature rule using
+nodes  <span class="math notranslate nohighlight">\(\phi_j\)</span> and weights  <span class="math notranslate nohighlight">\(h_j\)</span>:</p>
+<div class="math notranslate nohighlight" id="equation-approx-complete-wave-rep">
+<span class="eqno">(5)<a class="headerlink" href="#equation-approx-complete-wave-rep" title="Permalink to this equation">¶</a></span>\[u(x,y,t) \approx \sum\limits_{j=0}^{P} h_j \Phi \left( t - \frac{\cos \phi_j}{c}(x+\delta), y, \phi_j \right)
+          e^{- \frac{1}{cT}\frac{\sin^2 \phi_j}{\cos \phi_j}(x+\delta)}.\]</div>
+<p>Introducing a second set of angles  <span class="math notranslate nohighlight">\(\bar{\phi}_j\)</span> and defining auxiliary functions
+<span class="math notranslate nohighlight">\(u_j(x,y,t)\)</span> by setting  <span class="math notranslate nohighlight">\(u_0 = u\)</span> and recursively solving</p>
+<div class="math notranslate nohighlight" id="equation-crbc-recursion">
+<span class="eqno">(6)<a class="headerlink" href="#equation-crbc-recursion" title="Permalink to this equation">¶</a></span>\[\bar{a}_{j} \frac{\partial u_{j+1}}{\partial t} - \frac{\partial u_{j+1}}{\partial x} + \bar{\sigma}_{j}
+   u_{j+1}  = a_j \frac{\partial u_{j}}{\partial t} + \frac{\partial u_{j}}{\partial x} + \sigma_{j} u_{j},\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  a_j = \frac{cos \phi_j}{c}, \qquad \bar{a}_j = \frac{cos \bar{\phi}_j}{c}, \qquad \sigma_j
+      = \frac{1}{cT}\frac{\sin^2 \phi_j}{\cos \phi_j}, \qquad \bar{\sigma}_j
+      = \frac{1}{cT}\frac{\sin^2 \bar{\phi}_j}{\cos \bar{\phi}_j},
+\end{align}</div><p>subject to  <span class="math notranslate nohighlight">\(u_{j+1}(x,y,0) = 0\)</span>. Substituting <a class="reference internal" href="#equation-approx-complete-wave-rep">(5)</a> for  <span class="math notranslate nohighlight">\(u_0\)</span>,
+we notice that individual terms of <a class="reference internal" href="#equation-approx-complete-wave-rep">(5)</a> are annihilated by the right-hand
+side of <a class="reference internal" href="#equation-crbc-recursion">(6)</a>; therefore,</p>
+<div class="math notranslate nohighlight" id="equation-crbc-p">
+<span class="eqno">(7)<a class="headerlink" href="#equation-crbc-p" title="Permalink to this equation">¶</a></span>\[  u_{P+1} = 0.\]</div>
+<p>Finally, to utilize this approximation, we impose <a class="reference internal" href="#equation-crbc-p">(7)</a> on the incoming
+normal characteristic variables.</p>
+<div class="section" id="advantages">
+<h3>Advantages<a class="headerlink" href="#advantages" title="Permalink to this headline">¶</a></h3>
+<p>The complete radiation boundary conditions (CRBCs) have several advantages over
+other boundary conditions</p>
+<ul class="simple">
+<li><p>The boundaries are local, but achieve comparable long-time accuracies to nonlocal conditions. This allows for cheaper computations and a greater range of geometries to be considered.</p></li>
+<li><p>The number of auxiliary variables,  <span class="math notranslate nohighlight">\(P\)</span>, required to obtain an accuracy  <span class="math notranslate nohighlight">\(\varepsilon\)</span> up to time  <span class="math notranslate nohighlight">\(T\)</span> satisfies  <span class="math notranslate nohighlight">\(P = O\left(\ln \frac{1}{\varepsilon} \cdot \ln \frac{cT}{\delta}\right)\)</span>. This gives a clear notion of accuracy as well as providing a means to select the optimal parameters <cite>a priori</cite>.</p></li>
+<li><p>The recursions <a class="reference internal" href="#equation-crbc-recursion">(6)</a> require only first derivatives even though <span class="math notranslate nohighlight">\(P\)</span> may be arbitrarily high, which enables the boundary conditions to be easily implemented to an arbitrary order <span class="math notranslate nohighlight">\(P\)</span> for a given discretization scheme.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="overview-of-the-double-absorbing-boundary">
+<h2>Overview of the Double Absorbing Boundary<a class="headerlink" href="#overview-of-the-double-absorbing-boundary" title="Permalink to this headline">¶</a></h2>
+<p>We illustrate the double absorbing boundary layer (DAB)
+using the Klein-Gordon equation in the semi-infinite wave guide:</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+   Wu \equiv \frac{\partial^2 u}{\partial t^2} - c^2 \nabla^2 u + su = f, \\
+   u(x_L,y,t) = u(x,y_L,t) = u(x,y_R,t) = 0, \\
+   u(x,y,0) = g(x,y), \\
+   \frac{\partial u}{\partial t} (x,y,0) = \dot{g}(x,y).
+\end{align}</div><p>We further suppose that if <span class="math notranslate nohighlight">\(x &gt; x_I &gt; x_L\)</span>, the medium is homogeneous and free of sources, that is,
+<cite>c</cite> and <span class="math notranslate nohighlight">\(s\)</span> are constants and <span class="math notranslate nohighlight">\(f = 0\)</span>; therefore, <span class="math notranslate nohighlight">\(Wu = 0\)</span>.
+Additionally, we require that the initial conditions vanish so <span class="math notranslate nohighlight">\(g = \dot{g} = 0\)</span>
+for <span class="math notranslate nohighlight">\(x &gt; x_I\)</span>.</p>
+<p>We now truncate the domain at some <span class="math notranslate nohighlight">\(x = x_R &gt; x_I\)</span>. We can view the entire truncated domain
+as being divided into two sub-domains: the interior domain <span class="math notranslate nohighlight">\(\varOmega_I \equiv [x_L, x_I] \times [y_L, y_R]\)</span> and a thin layer <span class="math notranslate nohighlight">\(\varOmega_L \equiv [x_I, x_R] \times [y_L, y_R]\)</span>. The goal is to
+construct a solution in <span class="math notranslate nohighlight">\(\varOmega_I\)</span> as close as possible to the solution of the original semi-infinite
+problem in that domain and to use <span class="math notranslate nohighlight">\(\varOmega_L\)</span> as an absorbing layer.</p>
+<p>To do this, we introduce auxiliary variables <span class="math notranslate nohighlight">\(u_0, ... u_{P+1}\)</span> in <span class="math notranslate nohighlight">\(\varOmega_L\)</span> and
+require <span class="math notranslate nohighlight">\(u_j\)</span> to satisfy that same wave equation as <span class="math notranslate nohighlight">\(u\)</span>:</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  Wu_j \equiv \frac{\partial^2 u_j}{\partial t^2} - c^2 \nabla^2 u_j + su_j = 0, \qquad j=0,1...,P+1,
+       \qquad \text{in }   \varOmega_L.
+\end{align}</div><p>The auxiliary variables satisfy zero initial conditions</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  u_j(x,y,0) = \frac{\partial u_j}{\partial t} =0, \qquad j=0,1...,P+1, \qquad \text{in } \varOmega_L,
+\end{align}</div><p>and satisfy the boundary conditions</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  u_j(x,y,t) = 0, \qquad j=0,1...,P+1, \qquad y=y_L,y_R, \qquad \text{in } \varOmega_L,
+\end{align}</div><p>To define the additional boundary conditions on <span class="math notranslate nohighlight">\(\varOmega_L\)</span>, we utilize the CRBC boundary recursions <a class="reference internal" href="#equation-crbc-recursion">(6)</a>:</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+   \bar{a}_{j} \frac{\partial u_{j+1}}{\partial t} - \frac{\partial u_{j+1}}{\partial x} + \bar{\sigma}_{j} u_{j+1}
+    = a_j \frac{\partial u_{j}}{\partial t} + \frac{\partial u_{j}}{\partial x} + \sigma_{j} u_{j},
+\end{align}</div><p>and require them to hold at <span class="math notranslate nohighlight">\(x=x_I,x_R\)</span> (note that in principle, we could use any radiation/absorbing boundary conditions here).
+On <span class="math notranslate nohighlight">\(x = x_I\)</span>, we require the <span class="math notranslate nohighlight">\(u\)</span> and <span class="math notranslate nohighlight">\(u_0\)</span> to agree in value
+and slope:</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  u_0 = u, \qquad \frac{\partial u_{0}}{\partial x} = \frac{\partial u}{\partial x}, \qquad x = x_I.
+\end{align}</div><p>Since <span class="math notranslate nohighlight">\(u\)</span> and <span class="math notranslate nohighlight">\(u_0\)</span> satisfy the same wave equation in <span class="math notranslate nohighlight">\(\varOmega_L\)</span>,</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  u_0 \equiv u, \qquad \text{in } \varOmega_L.
+\end{align}</div><p>Finally, at <span class="math notranslate nohighlight">\(x = x_R\)</span>, we require the “termination condition”</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+  \bar{a}_{P+1} \frac{\partial u_{P+1}}{\partial t} - \frac{\partial u_{P+1}}{\partial x}
+  + \bar{\sigma}_{P+1} u_{P+1} = 0.
+\end{align}</div><div class="section" id="id1">
+<h3>Advantages<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The following are some advantages the double absorbing boundary layer construction using CRBCs (note that is in principle to construct a DAB using any absorbing boundary conditions):</p>
+<ul class="simple">
+<li><p>The auxiliary variables are defined to satisfied the desired wave equation in the boundary layer.</p></li>
+<li><p>It is not necessary to eliminate normal derivatives in the formulation. This potentially makes the DAB easier to implement as apposed to directly using the CRBCs because we do not have to replace the normal derivatives with temporal and tangential derivatives. Furthermore, this may make it easier to implement in a layered medium.</p></li>
+<li><p>In some cases, it is not necessary to handle edges or corners in a special way.</p></li>
+<li><p>The interior of the DAB layer can be approximated using a different scheme than what is used on the domain <span class="math notranslate nohighlight">\(\varOmega_I\)</span>, which allows us, for instance, to return data at whatever ghost nodes the scheme in <span class="math notranslate nohighlight">\(\varOmega_I\)</span> may need.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="discretization-of-the-dab">
+<span id="dab-discretization"></span><h2>Discretization of the DAB<a class="headerlink" href="#discretization-of-the-dab" title="Permalink to this headline">¶</a></h2>
+<p>The basic idea is to use the scalar wave equation to update the points in the
+center a DAB layer and use CRBC recursions plus either a termination
+condition or value from that can be updated by the solver in the interior of the
+domain to update the outer points of the layer.</p>
+<p>More precisely, supposing we have an initial condition compactly supported
+away from the boundary, to provide a boundary update for the left side in the
+<span class="math notranslate nohighlight">\(x\)</span> direction, we introduce the auxiliary variables
+<span class="math notranslate nohighlight">\(u_{p}^{\tilde{i},j,k,n}\)</span> and <span class="math notranslate nohighlight">\(u_{p}^{\tilde{i},j,k,n}\)</span>
+for <span class="math notranslate nohighlight">\(p=0,...,P\)</span>  and <span class="math notranslate nohighlight">\(\tilde{i} = n_x-1,n_x,n_x+1\)</span>.
+The equations for the <span class="math notranslate nohighlight">\(u\)</span> auxiliary variables are</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}u_{0} &amp;= u, \qquad x =  x_{n_x-1} \\
+\frac{\partial^2 u_{p}}{\partial t^2} &amp;= c^2 \nabla^2 u_{p}, \qquad x = x = x_{n_x}\\
+\left(a_p \frac{\partial}{\partial t} - c \frac{\partial }{\partial x} + \sigma_p  \right)u_{p-1}
+&amp; = \left(\bar{a}_p \frac{\partial}{\partial t} + c \frac{\partial}{\partial x} + \bar{\sigma}_p \right) u_{p},
+\qquad x = x_{n_x-\frac{1}{2}}, x_{n_x+\frac{1}{2}},\end{split}\]</div>
+<p>with the termination condition</p>
+<div class="math notranslate nohighlight">
+\[\left(\frac{\partial}{\partial t} -c \frac{\partial}{\partial x} \right)u_{P} = 0, &amp; \quad x =  x_{n_x+\frac{1}{2}}.\]</div>
+<p>We discretize these equations using second order centered differences. Additionally,
+we average in space and time to ensure that the differences are centered at the
+appropriate space-time coordinate. We note that this procedure is also second order.
+This yields the following discretization:</p>
+<div class="math notranslate nohighlight">
+\[u_{0}^{n_x-1,j,k,n} = u^{n_x-1,j,k,n}.\]</div>
+<p>The discretization of the wave equation is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}u_{p}^{n_x,j,k,n-1} - 2 u_{p}^{n_x,j,k,n} + u_{p}^{n_x,j,k,n+1}   &amp; =
+c^2 (\Delta t)^2 \left[ \frac{1}{(\Delta x)^2} \left(u_{p}^{n_x-1,j,k,n} - 2 u_{p}^{n_x,j,k,n}
++ u_{p}^{n_x+1,j,k,n} \right) \right.  \\
+&amp;+\frac{1}{(\Delta y)^2} \left(u_{p}^{n_x,j-1,k,n} - 2 u_{p}^{n_x,j,k,n} + u_{p}^{n_x,j+1,k,n}\right)  \\
+&amp;+\left. \frac{1}{(\Delta z)^2} \left(u_{p}^{n_x,j,k-1,n} - 2 u_{p}^{n_x,j,k,n} + u_{p}^{n_x,j,k+1,n} \right) \right].\end{split}\]</div>
+<p>From the recursions, we get</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}&amp;a_p \left( u_{p-1}^{n_x-1,j,k,n+1} + u_{p-1}^{n_x,j,k,n+1} - u_{p-1}^{n_x-1,j,k,n} - u_{p-1}^{n_x,j,k,n} \right)    \\
+&amp;+\frac{c \Delta t}{\Delta x} \left(u_{p-1}^{n_x,j,k,n+1} - u_{p-1}^{n_x-1,j,k,n+1} + u_{p-1}^{n_x,j,k,n}
+  - u_{p-1}^  {n_x-1,j,k,n} \right) \nonumber \\
+&amp;+ \sigma_p \frac{\Delta t}{2} \left(u_{p-1}^{n_x-1,j,k,n+1} + u_{p-1}^{n_x,j,k,n+1} + u_{p-1}^{n_x-1,j,k,n}
+  + u_{p-1}^{n_x,j,k,n} \right)  \nonumber \\
+&amp; = \bar{a}_p \left(u_{p}^{n_x-1,j,k,n+1} + u_{p}^{n_x,j,k,n+1} - u_{p}^{n_x-1,j,k,n} - u_{p}^{n_x,j,k,n} \right)  \\
+&amp; -\frac{c \Delta t}{\Delta x} \left(u_{p}^{n_x,j,k,n+1} - u_{p}^{n_x-1,j,k,n+1} + u_{p}^{n_x,j,k,n}
+  - u_{p}^{n_x-1,j,k,n} \right)  \nonumber \\
+&amp; + \bar{\sigma}_p \frac{\Delta t}{2} \left(u_{p}^{n_x-1,j,k,n+1} + u_{p}^{n_x,j,k,n+1} + u_{p}^{n_x-1,j,k,n}
+  + u_{p}^{n_x,j,k,n} \right),  \nonumber\end{split}\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}&amp; a_p \left(u_{p-1}^{n_x,j,k,n+1} + u_{p-1}^{n_x+1,j,k,n+1} - u_{p-1}^{n_x,j,k,n} - u_{p-1}^{n_x+1,j,k,n} \right)  \\
+&amp;+\frac{c \Delta t}{\Delta x} \left(u_{p-1}^{n_x+1,j,k,n+1} - u_{p-1}^{n_x,j,k,n+1} + u_{p-1}^{n_x+1,j,k,n}
+  - u_{p-1}^{n_x,j,k,n} \right)  \nonumber \\
+&amp;+ \sigma_p \frac{\Delta t}{2} \left(u_{p-1}^{n_x,j,k,n+1} + u_{p-1}^{n_x+1,j,k,n+1} + u_{p-1}^{n_x,j,k,n}
+  + u_{p-1}^{n_x+1,j,k,n} \right)  \nonumber \\
+&amp;= \bar{a}_p \left(u_{p}^{n_x,j,k,n+1} + u_{p}^{n_x+1,j,k,n+1} - u_{p}^{n_x,j,k,n} - u_{p}^{n_x+1,j,k,n} \right) \\
+&amp; -\frac{c \Delta t}{\Delta x} \left(u_{p}^{n_x+1,j,k,n+1} - u_{p}^{n_x,j,k,n+1} + u_{p}^{n_x+1,j,k,n}
+  - u_{p}^{n_x,j,k,n} \right)  \nonumber \\
+&amp;+ \bar{\sigma}_p \frac{\Delta t}{2} \left(u_{p}^{n_x,j,k,n+1} + u_{p}^{n_x+1,j,k,n+1} + u_{p}^{n_x,j,k,n}
+ + u_{p}^{n_x+1,j,k,n} \right).  \nonumber\end{split}\]</div>
+<p>Finally, the termination condition is discretized by</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\left(u_{P}^{n_x,j,k,n+1} + u_{P}^{n_x+1,j,k,n+1} - u_{P}^{n_x,j,k,n} - u_{P}^{n_x+1,j,k,n} \right) &amp;  \\
++\frac{c \Delta t}{\Delta x} \left(u_{P}^{n_x+1,j,k,n+1} - u_{P}^{n_x,j,k,n+1} + u_{P}^{n_x+1,j,k,n}
+- u_{P}^{n_x,j,k,n} \right) &amp; = 0.\end{split}\]</div>
+<p>The boundaries on the remaining faces are similar. To deal with edges, we
+instead introduce a doubly indexed set of auxiliary variables where the two indexes
+correspond to applying the DAB boundary as above in each of the normal directions.
+Corners are handled similarly with a triply indexed set of auxiliary variables.</p>
+<p class="rubric">References</p>
+<ol class="arabic simple" id="bibtex-bibliography-YeeCRBC/theory_overview-0" start="1">
+<li><p>T. Hagstrom and T. Warburton. Complete radiation boundary conditions: minimizing the long time error growth of local methods. <em>SIAM Journal on Numerical Analysis</em>, 47(5):3678–3704, 2009.</p></li>
+<li><p>Thomas Hagstrom. Rbcpac. http://faculty.smu.edu/thagstrom/rbcpac.html. URL: <a class="reference external" href="http://faculty.smu.edu/thagstrom/rbcpac.html">http://faculty.smu.edu/thagstrom/rbcpac.html</a>.</p></li>
+<li><p>Thomas Hagstrom, Dan Givoli, Daniel Rabinovich, and Jacobo Bielak. The double absorbing boundary method. <em>Journal of Computational Physics</em>, 259(0):220 – 241, 2014.</p></li>
+</ol>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+<div id="sourcelink">
+  <a href="../_sources/YeeCRBC/theory_overview.rst.txt"
+     rel="nofollow">Source</a>
+</div>
+      
+    </p>
+    <p>
+    <a href="../contrib.html">rbcpack Contributors </a><br />
+        &copy; Copyright 2015-2016, rbcpack.org.<br/>
+    </p>
+  </div>
+</footer>
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-71984541-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+</html>
