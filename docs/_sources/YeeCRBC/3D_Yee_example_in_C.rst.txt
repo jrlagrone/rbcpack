@@ -184,7 +184,7 @@ We need the standard libraries for ``malloc()``, ``free()``, etc. ::
   #include <stdlib.h>   
 
 To get  the interface to the CRBC/DAB library specialized for the 3D Yee scheme 
-(see `3d_yee_crbc_api.h <https://bitbucket.org/jlagrone/yee-crbc-testing/src/default/src/CRBC/3d_yee_crbc_api.h?at=default/>`_) ::
+(see `3d_yee_crbc_api.h <https://github.com/jrlagrone/rbcpack/blob/main/src/CRBC/3d_yee_crbc_api.h?at=default/>`_) ::
 
   #include <3d_yee_crbc_api.h>
 
