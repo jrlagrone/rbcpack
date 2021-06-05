@@ -53,7 +53,7 @@ Downloading
 -----------
 
 The code is also hosted in a read only repository: 
-`RBCPack Bitbucket Reposistory <https://bitbucket.org/rbcpack/rbcpack>`_.
+`RBCPack github reposistory <https://github.com/jrlagrone/rbcpack>`_.
 Alternatively, the current release of each component can be downloaded from their
 respective pages.
 

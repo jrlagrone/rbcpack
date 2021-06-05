@@ -4,7 +4,7 @@
 Wave Equation code with CRBC/DAB Boundary Conditions
 ****************************************************
 
-This tutorial explains the code `wave_eq.cpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/wave_cxx/wave_eq.cpp>`_.
+This tutorial explains the code `wave_eq.cpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/wave_cxx/wave_eq.cpp>`_.
 
 Introduction
 ============

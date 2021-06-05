@@ -5,9 +5,9 @@
 *********************************************************
 
 This tutorial explains the code contained primarily in the files 
-`yee_mpi.cpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/yee_mpi/yee_mpi.cpp>`_,
-`yee_mpi.hpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/yee_mpi/yee_mpi.hpp>`_,
-and `yee_mpi_example.cpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/yee_mpi/yee_mpi_example.cpp>`_.
+`yee_mpi.cpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/yee_mpi/yee_mpi.cpp>`_,
+`yee_mpi.hpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/yee_mpi/yee_mpi.hpp>`_,
+and `yee_mpi_example.cpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/yee_mpi/yee_mpi_example.cpp>`_.
 
 
 .. raw:: html
@@ -190,7 +190,7 @@ Class Declaration and Code Structure
 ====================================
 
 First we briefly describe the definition of the `yee_updater` class that is declared
-in header file `yee_mpi.hpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/yee_mpi/yee_mpi.hpp>`_. 
+in header file `yee_mpi.hpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/yee_mpi/yee_mpi.hpp>`_. 
 
 Include files
 -------------
@@ -433,7 +433,7 @@ Finally, we have functions to compute the norm and error of the solutions. ::
 Class Definitions
 =================
 
-The definitions for the `yee_updater` class are implemented in the file `yee_mpi.cpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/yee_mpi/yee_mpi.cpp>`_. 
+The definitions for the `yee_updater` class are implemented in the file `yee_mpi.cpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/yee_mpi/yee_mpi.cpp>`_. 
 
 Includes
 --------
@@ -583,8 +583,8 @@ We now initialize the boundary updater objects using the DAB library ::
 
 Finally, we set up the solution routine. The solution we will use is described
 in the :doc:`numerical results page <results>` and the code is availabe at 
-`solutions.cpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/yee_mpi/solutions.cpp>`_
-and `solutions.hpp <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/examples/yee_mpi/solutions.hpp>`_. ::
+`solutions.cpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/yee_mpi/solutions.cpp>`_
+and `solutions.hpp <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/examples/yee_mpi/solutions.hpp>`_. ::
 
   // set up the solution routine
   if (grid_comm != MPI_COMM_NULL) {

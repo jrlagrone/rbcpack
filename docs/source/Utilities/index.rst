@@ -32,6 +32,6 @@ error tolerance. *optimal_cosines* computes the optimal cosine parameters based
 on an user provided number of recursions. The usage is documented in the header
 file optimal_cosines.h.
 
-These routines are available in the `RBCPack Bitbucket Reposistory <https://bitbucket.org/rbcpack/rbcpack>`_
+These routines are available in the `RBCPack github Reposistory <https://github.com/jrlagrone/rbcpack>`_
 or can be downloaded directly :download:`optimal_cosines.tar.gz <optimal_cosines.tar.gz>`.
 

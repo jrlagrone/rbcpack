@@ -15,8 +15,7 @@ rbcpack Contributors
       <img src="_static/SMU.png" alt="SMU logo" style="height:60px; float:right;" />
       <h4 class="list-group-item-heading">John LaGrone</h4>
       <p class="list-group-item-text">
-         John LaGrone is currently a graduate student working with Thomas
-         Hagstrom at Southern Methodist University. He is responsible for the
+         John LaGrone is currently a computer vision engineer at Scandy. He is responsible for the
          Yee/FDTD portions of rbcpack.</p>
     </a>
     <a href="http://www.lagrone.me" class="list-group-item">

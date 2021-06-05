@@ -4,7 +4,7 @@
 2D Wave Equation 
 ****************
 
-This tutorial explains the code `wave_2d_DAB.m <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/Matlab/wave_2d_DAB.m>`_ and requires the use of `optimal_cosines.m <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/Matlab/optimal_cosines.m>`_
+This tutorial explains the code `wave_2d_DAB.m <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/Matlab/optimal_cosines.m>`_
 
 Introduction
 ============

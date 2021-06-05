@@ -4,7 +4,7 @@
 2D Klein-Gordon with a Corner
 *****************************
 
-This tutorial explains the code `klein_gordon_2d_corner_DAB.m <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/Matlab/klein_gordon_2d_corner_DAB.m>`_ and requires the use of `optimal_cosines.m <https://bitbucket.org/rbcpack/rbcpack/src/default/YeeCRBC/Matlab/optimal_cosines.m>`_
+This tutorial explains the code `klein_gordon_2d_corner_DAB.m <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/Matlab/klein_gordon_2d_corner_DAB.m>`_ and requires the use of `optimal_cosines.m <https://github.com/jrlagrone/rbcpack/blob/main/YeeCRBC/Matlab/optimal_cosines.m>`_
 
 Introduction
 ============
