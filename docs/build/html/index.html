@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the Radiation Boundary Condition Package &#8212; RBCPack  documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Yee/FDTD" href="YeeCRBC/index.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">
+          rbcpack</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Components <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="YeeCRBC/index.html">Yee/FDTD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="YeeCRBC/index.html#downloads-and-respository">Downloads and Respository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="YeeCRBC/index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="YeeCRBC/index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contrib.html">rbcpack Contributors</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Current Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Welcome to the Radiation Boundary Condition Package</a><ul>
+<li><a class="reference internal" href="#components">Components</a></li>
+<li><a class="reference internal" href="#downloading">Downloading</a><ul>
+<li><a class="reference internal" href="#acknowledgments-and-contributors">Acknowledgments and Contributors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="YeeCRBC/index.html" title="Next Chapter: Yee/FDTD"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">Yee/FDTD &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary">  <ul>
+<li class="toctree-l1"><a class="reference internal" href="YeeCRBC/index.html">Yee/FDTD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="YeeCRBC/index.html#downloads-and-respository">Downloads and Respository</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="YeeCRBC/index.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="YeeCRBC/index.html#documentation">Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="YeeCRBC/index.html#user-guides">User Guides</a></li>
+<li class="toctree-l3"><a class="reference internal" href="YeeCRBC/index.html#known-issues">Known Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="YeeCRBC/index.html#theory-results-and-publications">Theory, Results, and Publications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="YeeCRBC/index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contrib.html">rbcpack Contributors</a></li>
+</ul>
+
+<form action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+        </div>
+      </div>
+    <div class="body col-md-9 content" role="main">
+      
+  <div class="section" id="welcome-to-the-radiation-boundary-condition-package">
+<h1>Welcome to the Radiation Boundary Condition Package<a class="headerlink" href="#welcome-to-the-radiation-boundary-condition-package" title="Permalink to this headline">¶</a></h1>
+<p>The purpose of this library is to provide accurate and efficient radiation and
+absorbing boundary conditions to truncate the computational domain for the
+simulation of a variety of wave propagation problems in the time domain.
+The plan is for RBCPack to contain stand-alone components that implement complete
+radiation boundary conditions and/or double absorbing boundary layers for a variety
+of popular time-domain wave propagation solvers.</p>
+<div class="section" id="components">
+<h2>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h2>
+<p>Currently, the following components are available:</p>
+<div class="toctree-wrapper compound">
+</div>
+<div class="list-group">
+  <a href="YeeCRBC/index.html" class="list-group-item">
+    <h4 class="list-group-item-heading">Yee/FDTD</h4>
+    <p class="list-group-item-text">
+        This component provides complete radiation boundary conditions in the
+        for of a double absorbing boundary for Yee/FDTD solvers. </p>
+  </a>
+  <a href="Utilities/index.html" class="list-group-item">
+    <h4 class="list-group-item-heading">Utilities</h4>
+    <p class="list-group-item-text">
+       A collection of useful routines that may aid in the development of other
+       boundary implementations.</p>
+  </a>
+</div><p>Other components are under development and will be released as they are completed.
+Components to handle (un)structured discontinuous Galerkin methods and methods
+based on modified equations are nearing completion and should be released in the
+near future. Components for Hermite methods are in the early stages of development.</p>
+</div>
+<div class="section" id="downloading">
+<h2>Downloading<a class="headerlink" href="#downloading" title="Permalink to this headline">¶</a></h2>
+<p>The code is also hosted in a read only repository:
+<a class="reference external" href="https://github.com/jrlagrone/rbcpack">RBCPack github reposistory</a>.
+Alternatively, the current release of each component can be downloaded from their
+respective pages.</p>
+<p>The code is released under the LGPL v3. See <a class="reference external" href="http://www.gnu.org/licenses/lgpl-3.0.en.html">http://www.gnu.org/licenses/lgpl-3.0.en.html</a>.
+If a different license is required, please contact us.</p>
+<div class="section" id="acknowledgments-and-contributors">
+<h3>Acknowledgments and Contributors<a class="headerlink" href="#acknowledgments-and-contributors" title="Permalink to this headline">¶</a></h3>
+<p>This work was supported in part by ARO Grant W911NF-09-1-0344 and DoD STTR A11A-015-0067.
+All conclusions are those of the authors and do not necessarily reflect
+the views of the ARO or DoD.</p>
+<div class="toctree-wrapper compound">
+</div>
+<p>We would also like to acknowledge the <a class="reference internal" href="contrib.html"><span class="doc">rbcpack contributors</span></a>.</p>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/index.rst.txt"
+     rel="nofollow">Source</a>
+</div>
+      
+    </p>
+    <p>
+    <a href="contrib.html">rbcpack Contributors </a><br />
+        &copy; Copyright 2015-2016, rbcpack.org.<br/>
+    </p>
+  </div>
+</footer>
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-71984541-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+</html>

@@ -44,12 +44,12 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.bibtex',
-    'sphinxcontrib.spelling'
+    'sphinxcontrib.bibtex'
+    # 'sphinxcontrib.spelling'
 ]
 
-spelling_show_suggestions=True
-spelling_word_list_filename='spelling_wordlist.txt'
+# spelling_show_suggestions=True
+# spelling_word_list_filename='spelling_wordlist.txt'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

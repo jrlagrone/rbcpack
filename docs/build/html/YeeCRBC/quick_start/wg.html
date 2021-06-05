@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Waveguide Example using ToyFDTD code and the DAB/CRBC Library &#8212; RBCPack  documentation</title>
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="A Brief Overview of Theory" href="../theory_overview.html" />
+    <link rel="prev" title="Transverse-Electromagnetic Example Interfacing the DAB/CRBC library with an External Yee Scheme" href="te.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html">
+          rbcpack</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Components <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#downloads-and-respository">Downloads and Respository</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contrib.html">rbcpack Contributors</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Current Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">3D Waveguide Example using ToyFDTD code and the DAB/CRBC Library</a><ul>
+<li><a class="reference internal" href="#use-crbc-library-in-the-yee-scheme">Use CRBC library in the Yee scheme</a></li>
+<li><a class="reference internal" href="#setup-crbc">Setup CRBC</a></li>
+<li><a class="reference internal" href="#outputs">Outputs</a></li>
+<li><a class="reference internal" href="#more-information">More Information</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="te.html" title="Previous Chapter: Transverse-Electromagnetic Example Interfacing the DAB/CRBC library with an External Yee Scheme"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; Transverse-El...</span>
+    </a>
+  </li>
+  <li>
+    <a href="../theory_overview.html" title="Next Chapter: A Brief Overview of Theory"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">A Brief Overv... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary">  <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#downloads-and-respository">Downloads and Respository</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../index.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#documentation">Documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../index.html#user-guides">User Guides</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../index.html#known-issues">Known Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../index.html#theory-results-and-publications">Theory, Results, and Publications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contrib.html">rbcpack Contributors</a></li>
+</ul>
+
+<form action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+        </div>
+      </div>
+    <div class="body col-md-9 content" role="main">
+      
+  <div class="section" id="d-waveguide-example-using-toyfdtd-code-and-the-dab-crbc-library">
+<h1>3D Waveguide Example using ToyFDTD code and the DAB/CRBC Library<a class="headerlink" href="#d-waveguide-example-using-toyfdtd-code-and-the-dab-crbc-library" title="Permalink to this headline">¶</a></h1>
+<p>For this example, we use <a class="reference external" href="http://dougneubauer.com/wp-content/uploads/wdata/toyfdtd/ToyFDTD2.html">ToyFDTD2</a>
+and add the functionality of the DAB/CRBC library. ToyFDTD was originally
+written by Laurie E. Miller, it is no longer maintained but has been archived
+by Doug Neubauer.
+The original file for this example can be downloaded at <a class="reference external" href="http://dougneubauer.com/wp-content/uploads/wdata/toyfdtd/toyfdtd2_c.txt">here</a>.
+The modified version with DAB/CRBC library can be download at <a class="reference download internal" download="" href="../../_downloads/080dd336aceedeb54e89f21ff7cfdf4f/ToyFDTD_CRBC.tar.gz"><code class="xref download docutils literal notranslate"><span class="pre">ToyFDTD_CRBC.tar.gz</span></code></a>.</p>
+<p>Instead of rewriting the original ToyFDTD2 file, we write a seperate file called
+<em>external_c_codes.c</em> to control most of the CRBC setting and user-defined functions.</p>
+<p>To compile and run the program(specify the location of CRBC library i.e. the directory containing libyeecrbc.a):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setenv</span> <span class="n">yeecrbc_DIR</span> <span class="o">~/</span><span class="n">YeeCRBC</span><span class="o">/</span><span class="n">lib</span>
+<span class="n">make</span>
+<span class="o">./</span><span class="n">run</span><span class="o">.</span><span class="n">x</span>
+</pre></div>
+</div>
+<div class="section" id="use-crbc-library-in-the-yee-scheme">
+<h2>Use CRBC library in the Yee scheme<a class="headerlink" href="#use-crbc-library-in-the-yee-scheme" title="Permalink to this headline">¶</a></h2>
+<p>The CRBC libary is initialized before the time stepping begins</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="o">*</span><span class="n">ptr_crbc</span><span class="p">;</span>
+<span class="n">crbc_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ptr_crbc</span><span class="p">,</span><span class="n">dx</span><span class="p">,</span><span class="n">dy</span><span class="p">,</span><span class="n">dz</span><span class="p">,</span><span class="n">nx</span><span class="p">,</span><span class="n">ny</span><span class="p">,</span><span class="n">nz</span><span class="p">,</span><span class="n">ioff_ex</span><span class="p">,</span><span class="n">ioff_ey</span><span class="p">,</span><span class="n">ioff_ez</span><span class="p">,</span> <span class="n">MAXIMUM_ITERATION</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">LIGHT_SPEED</span><span class="p">);</span>
+<span class="n">char</span> <span class="n">vtkfilename</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+<span class="n">FILE</span> <span class="o">*</span><span class="n">f</span><span class="p">;</span>
+
+<span class="k">for</span><span class="p">(</span><span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="n">MAXIMUM_ITERATION</span><span class="p">;</span> <span class="n">iteration</span><span class="o">++</span><span class="p">)</span>
+    <span class="p">{</span><span class="o">//</span> <span class="n">mainloop</span>
+    <span class="o">...</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<p>Basic information if passed from Yee Scheme solver to CRBC through crbc_init().
+All CRBC related information can be accessed through the pointer ptr_crbc.
+<em>ioff_ex</em>, <em>ioff_ey</em>, <em>ioff_ez</em> defines the leading dimension of the E field
+arrays, since in the ToyFDTD2, the Ex, Ey, Ez file are defined as the following</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define Ex(I,J,K) ex[ioff_ex*(I) + (nz+1)*(J) + (k)]</span>
+<span class="c1">#define Ey(I,J,K) ey[ioff_ey*(I) + (nz+1)*(J) + (k)]</span>
+<span class="c1">#define Ez(I,J,K) ez[ioff_ez*(I) + nz*(J) + (k)]</span>
+
+<span class="n">off_ex</span> <span class="o">=</span> <span class="p">(</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">nz</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">ioff_ey</span> <span class="o">=</span> <span class="n">ny</span><span class="o">*</span><span class="p">(</span><span class="n">nz</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">ioff_ez</span> <span class="o">=</span> <span class="p">(</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nz</span><span class="p">;</span>
+
+<span class="n">ex</span> <span class="o">=</span> <span class="n">calloc</span><span class="p">(</span><span class="n">nx</span><span class="o">*</span><span class="p">(</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">nz</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">));</span>
+<span class="n">ey</span> <span class="o">=</span> <span class="n">calloc</span><span class="p">((</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ny</span><span class="o">*</span><span class="p">(</span><span class="n">nz</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">));</span>
+<span class="n">ez</span> <span class="o">=</span> <span class="n">calloc</span><span class="p">((</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nz</span><span class="p">,</span><span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>The actual computation of the CRBC is done at the end of the time iteration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">computeboundary</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="n">ey</span><span class="p">,</span><span class="n">ez</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ptr_crbc</span><span class="p">);</span>
+<span class="p">}</span><span class="o">//</span> <span class="n">end</span> <span class="n">mainloop</span>
+</pre></div>
+</div>
+<p>We add the variable <em>vtkfilename</em> to hold the filenames for VTK files output, and use
+<em>writeefield()</em> to write the VTK files to the disk. These utility functions are
+defined in external_c_codes.c and can be called in the following way</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sprintf</span><span class="p">(</span><span class="n">vtkfilename</span><span class="p">,</span><span class="s2">&quot;CRBC_</span><span class="si">%08d</span><span class="s2">_Ez.vtk&quot;</span><span class="p">,</span><span class="n">iteration</span><span class="p">);</span>
+<span class="n">writeefield</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="n">ey</span><span class="p">,</span><span class="n">ez</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="o">&amp;</span><span class="n">ptr_crbc</span><span class="p">,</span><span class="n">vtkfilename</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="setup-crbc">
+<h2>Setup CRBC<a class="headerlink" href="#setup-crbc" title="Permalink to this headline">¶</a></h2>
+<p>In external_c_codes.c, we need to set at which we are going to apply CRBC. This is done in crbc_init():</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC_XLeft</span><span class="p">]</span>  <span class="o">=</span> <span class="n">CRBC_PEC</span><span class="p">;</span>
+<span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC_XRight</span><span class="p">]</span> <span class="o">=</span> <span class="n">CRBC_CRBC</span><span class="p">;</span>
+<span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC_YLeft</span><span class="p">]</span>  <span class="o">=</span> <span class="n">CRBC_PEC</span><span class="p">;</span>
+<span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC_YRight</span><span class="p">]</span> <span class="o">=</span> <span class="n">CRBC_PEC</span><span class="p">;</span>
+<span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC_ZLeft</span><span class="p">]</span>  <span class="o">=</span> <span class="n">CRBC_PEC</span><span class="p">;</span>
+<span class="n">d</span><span class="o">-&gt;</span><span class="n">boundaries</span><span class="p">[</span><span class="n">CRBC_ZRight</span><span class="p">]</span> <span class="o">=</span> <span class="n">CRBC_PEC</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>In this case, only the X+ side is an open end, the rest of the boundaries are all PEC.
+If we want to do a free space scattering problem, we just need to change all
+boundaries to ‘CRBC_CRBC’. In order to obtain a reliable error bound for long time
+simulation, the CRBC library need to know the total time(=MAXIMUM_ITERATION*dt)
+and the initial distance from the source to the CRBC faces. The latter is set in
+setup_crbc():</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">Now</span> <span class="nb">set</span> <span class="n">up</span> <span class="n">the</span> <span class="n">faces</span><span class="o">.</span> <span class="n">Start</span> <span class="n">by</span> <span class="n">looping</span> <span class="n">over</span> <span class="nb">all</span> <span class="n">of</span> <span class="n">the</span> <span class="n">possible</span> <span class="n">faces</span><span class="o">.</span> <span class="n">We</span>
+<span class="o">//</span> <span class="n">follow</span> <span class="n">the</span> <span class="n">order</span> <span class="n">given</span> <span class="ow">in</span> <span class="n">CRBC_Side</span><span class="p">,</span> <span class="n">so</span>
+<span class="o">//</span>   <span class="n">l</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">--&gt;</span> <span class="n">CRBC_XLeft</span>
+<span class="o">//</span>   <span class="n">l</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">--&gt;</span> <span class="n">CRBC_XRight</span>
+<span class="o">//</span>   <span class="n">l</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">--&gt;</span> <span class="n">CRBC_YLeft</span>
+<span class="o">//</span>   <span class="n">l</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">--&gt;</span> <span class="n">CRBC_YRight</span>
+<span class="o">//</span>   <span class="n">l</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">--&gt;</span> <span class="n">CRBC_ZLeft</span>
+<span class="o">//</span>   <span class="n">l</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">--&gt;</span> <span class="n">CRBC_ZRight</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">l</span><span class="o">&lt;</span><span class="mi">6</span><span class="p">;</span> <span class="o">++</span><span class="n">l</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="o">//</span> <span class="n">First</span> <span class="n">we</span> <span class="n">need</span> <span class="n">to</span> <span class="n">calculate</span> <span class="n">the</span> <span class="n">minimum</span> <span class="n">distance</span> <span class="n">between</span> <span class="n">the</span> <span class="n">boundary</span> <span class="ow">and</span>
+<span class="o">//</span> <span class="n">source</span><span class="o">.</span> <span class="n">Since</span> <span class="n">we</span> <span class="n">placed</span> <span class="n">the</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">center</span> <span class="n">of</span> <span class="n">the</span> <span class="n">domain</span><span class="p">,</span> <span class="n">this</span> <span class="ow">is</span>
+<span class="o">//</span> <span class="n">simple</span><span class="o">.</span> <span class="n">If</span> <span class="n">it</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">possible</span> <span class="n">to</span> <span class="n">calculate</span> <span class="n">this</span> <span class="n">directly</span><span class="p">,</span> <span class="n">using</span> <span class="n">a</span> <span class="n">lower</span>
+<span class="o">//</span> <span class="n">bound</span> <span class="k">for</span> <span class="n">the</span> <span class="n">seperation</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">safest</span> <span class="n">thing</span> <span class="n">to</span> <span class="n">do</span><span class="p">,</span> <span class="n">but</span> <span class="n">it</span> <span class="n">may</span> <span class="n">result</span>
+<span class="o">//</span> <span class="ow">in</span> <span class="n">more</span> <span class="n">work</span> <span class="n">being</span> <span class="n">done</span> <span class="n">that</span> <span class="ow">is</span> <span class="n">actually</span> <span class="n">needed</span> <span class="n">to</span> <span class="n">achieve</span> <span class="n">the</span> <span class="n">desired</span>
+<span class="o">//</span> <span class="n">accuracy</span><span class="o">.</span>
+<span class="n">switch</span> <span class="p">(</span><span class="n">l</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="n">case</span> <span class="mi">0</span><span class="p">:</span> <span class="o">//</span> <span class="n">Faces</span> <span class="k">with</span> <span class="n">a</span> <span class="n">normal</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">x</span><span class="o">-</span><span class="n">direction</span>
+<span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">imax</span> <span class="o">/</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dx</span><span class="p">);</span>
+<span class="k">break</span><span class="p">;</span>
+
+<span class="n">case</span> <span class="mi">1</span><span class="p">:</span> <span class="o">//</span> <span class="n">faces</span> <span class="k">with</span> <span class="n">a</span> <span class="n">normal</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">y</span><span class="o">-</span><span class="n">direction</span>
+<span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">jmax</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dy</span><span class="p">);</span>
+<span class="k">break</span><span class="p">;</span>
+
+<span class="n">case</span> <span class="mi">2</span><span class="p">:</span> <span class="o">//</span> <span class="n">faces</span> <span class="k">with</span> <span class="n">a</span> <span class="n">normal</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">z</span><span class="o">-</span><span class="n">direction</span>
+<span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">kmax</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="o">-&gt;</span><span class="n">dz</span><span class="p">);</span>
+<span class="k">break</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The modified Yee solver communicates with CRBC library through one layer of data,
+whose indices are defined in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">crbc_low_index</span><span class="p">[];</span>
+<span class="n">crbc_high_index</span><span class="p">[];</span>
+</pre></div>
+</div>
+<p>These indices are defined each CRBC face on all three E field components.</p>
+<div class="figure align-center" id="id1" style="width: 80%">
+<span id="fig-3d"></span><a class="reference internal image-reference" href="../../_images/3D_grid.png"><img alt="3D mesh" src="../../_images/3D_grid.png" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text">One layer of Yee cell data to communicate with CRBC library.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<p>On each Yee cell, the field variables are defined as shown below.</p>
+<div class="figure align-center" id="id2" style="width: 500px">
+<a class="reference internal image-reference" href="../../_images/cell2.png"><img alt="image of a Yee cell" src="../../_images/cell2.png" style="width: 450px;" /></a>
+<p class="caption"><span class="caption-text">Spatial configuration of a Yee cell.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="outputs">
+<h2>Outputs<a class="headerlink" href="#outputs" title="Permalink to this headline">¶</a></h2>
+<p>The output VTK files can be viewed in Paraview and the following movie was generated
+by cutting out a strip of the wave guide.</p>
+<div style="text-align: center">
+  <iframe width="600" height="450" src="https://www.youtube.com/embed/l8ftV6-vZrQ" frameborder="0" allowfullscreen></iframe>
+</div></div>
+<div class="section" id="more-information">
+<h2>More Information<a class="headerlink" href="#more-information" title="Permalink to this headline">¶</a></h2>
+<p>For more detailed information about implementing the DAB/CRBC library in 3D with
+the Yee scheme, please refer to <a class="reference internal" href="../3D_Yee_example_in_C.html"><span class="doc">3-D FDTD code with CRBC/DAB Boundary Conditions</span></a>.</p>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+<div id="sourcelink">
+  <a href="../../_sources/YeeCRBC/quick_start/wg.rst.txt"
+     rel="nofollow">Source</a>
+</div>
+      
+    </p>
+    <p>
+    <a href="../../contrib.html">rbcpack Contributors </a><br />
+        &copy; Copyright 2015-2016, rbcpack.org.<br/>
+    </p>
+  </div>
+</footer>
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-71984541-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+</html>

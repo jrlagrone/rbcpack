@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation &#8212; RBCPack  documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Supported Problems" href="supported_problems.html" />
+    <link rel="prev" title="Install and Running the Included Examples" href="quick_start/ex.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          rbcpack</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Components <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#downloads-and-respository">Downloads and Respository</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contrib.html">rbcpack Contributors</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Current Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#cmake">CMake</a><ul>
+<li><a class="reference internal" href="#options">Options</a><ul>
+<li><a class="reference internal" href="#shared-library">Shared Library</a></li>
+<li><a class="reference internal" href="#install-path">Install Path</a></li>
+<li><a class="reference internal" href="#example-locations">Example Locations</a></li>
+<li><a class="reference internal" href="#index-and-data-types">Index and Data Types</a></li>
+<li><a class="reference internal" href="#save-and-restart">Save and Restart</a></li>
+<li><a class="reference internal" href="#threading">Threading</a></li>
+<li><a class="reference internal" href="#debugging">Debugging</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#linking">Linking</a><ul>
+<li><a class="reference internal" href="#cmake-linking">CMake Linking</a></li>
+<li><a class="reference internal" href="#manual-linking">Manual Linking</a></li>
+<li><a class="reference internal" href="#running-dynamically-linked-executables">Running Dynamically Linked Executables</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#uninstalling">Uninstalling</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="quick_start/ex.html" title="Previous Chapter: Install and Running the Included Examples"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; Install and R...</span>
+    </a>
+  </li>
+  <li>
+    <a href="supported_problems.html" title="Next Chapter: Supported Problems"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">Supported Problems &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary">  <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Yee/FDTD</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#downloads-and-respository">Downloads and Respository</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="index.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#documentation">Documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html#user-guides">User Guides</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#known-issues">Known Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#theory-results-and-publications">Theory, Results, and Publications</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Utilities/index.html">Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../Utilities/index.html#optimal-cosines">Optimal Cosines</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contrib.html">rbcpack Contributors</a></li>
+</ul>
+
+<form action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+        </div>
+      </div>
+    <div class="body col-md-9 content" role="main">
+      
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="cmake">
+<h2>CMake<a class="headerlink" href="#cmake" title="Permalink to this headline">¶</a></h2>
+<p>The simplest method to install the library and build the examples is to use
+CMake. For the default install, we suggest the following. First, extract the
+source</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tar</span> <span class="o">-</span><span class="n">zxvf</span> <span class="n">yee_crbc_lib</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
+</div>
+<p>We suggest building the library in a separate directory. For this example we
+will call the directory ‘build’. Then, we simply have to invoke CMake.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="n">build</span>
+<span class="n">cd</span> <span class="n">build</span>
+<span class="n">cmake</span> <span class="o">../</span><span class="n">yee_crbc_lib</span>
+<span class="n">make</span>
+<span class="n">make</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>This will install the library and build the examples.</p>
+<p>The library uses some functionality of C++11. For most modern compilers, we have
+found that it is not necessary to include any special compiler flags to use these
+features (e.g. Intel 15+, GNU 4.8+). However, some compilers do require
+we specifically tell it to use C++11. At this time it appears that CMake only
+identifies these flags correctly for the GNU compilers, so it may be necessary to
+tell CMake to include the appropriate flag. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">../</span><span class="n">yee_crbc_lib</span> <span class="o">-</span><span class="n">DCMAKE_CXX_FLAGS</span><span class="p">:</span><span class="n">STRING</span><span class="o">=-</span><span class="n">std</span><span class="o">=</span><span class="n">c</span><span class="o">++</span><span class="mi">11</span>
+</pre></div>
+</div>
+<p>The correct flag varies by compiler. Also note that if your compiler uses the GNU
+STL implementation, it is necessary that the GNU library version be &gt;=4.8.</p>
+<div class="section" id="options">
+<h3>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
+<p>There are additional options that can be enabled.</p>
+<div class="section" id="shared-library">
+<h4>Shared Library<a class="headerlink" href="#shared-library" title="Permalink to this headline">¶</a></h4>
+<p>To build the shared version of the library use the command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DBUILD_SHARED</span><span class="o">=</span><span class="s2">&quot;ON&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="install-path">
+<h4>Install Path<a class="headerlink" href="#install-path" title="Permalink to this headline">¶</a></h4>
+<p>The default install places the library file in <code class="docutils literal notranslate"><span class="pre">/usr/local/lib</span></code>
+and places the header files in <code class="docutils literal notranslate"><span class="pre">/usr/local/include/yeecrbc</span></code>, although this behavior
+can vary from system to system. The install can be changed to place the
+library in <code class="docutils literal notranslate"><span class="pre">/usr/lib</span></code> and the headers in <code class="docutils literal notranslate"><span class="pre">/usr/include/yeecrbc</span></code>, for example,
+by adding the following CMake option.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DCMAKE_INSTALL_PREFIX</span><span class="p">:</span><span class="n">PATH</span><span class="o">=/</span><span class="n">usr</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-locations">
+<h4>Example Locations<a class="headerlink" href="#example-locations" title="Permalink to this headline">¶</a></h4>
+<p>By default the examples are built in the build directory, so they can be found
+in &lt;path&gt;/build/examples. They can be built at another location by setting the
+<code class="docutils literal notranslate"><span class="pre">example_dir</span></code> variable. From the command line you can change by adding the option</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">Dexample_dir</span><span class="p">:</span><span class="n">STRING</span><span class="o">=</span><span class="s2">&quot;&lt;path to install examples&gt;&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="index-and-data-types">
+<h4>Index and Data Types<a class="headerlink" href="#index-and-data-types" title="Permalink to this headline">¶</a></h4>
+<p>The defaults are to use the <code class="docutils literal notranslate"><span class="pre">int</span></code> type for indexing and the <code class="docutils literal notranslate"><span class="pre">double</span></code> type for
+the field data type and coefficient data type. In the C interfaces, the indexing
+type can be changed to the <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">long</span></code> data type by adding the
+following command line options to the CMake invocation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DINDEX_TYPE</span><span class="p">:</span><span class="n">STRING</span><span class="o">=</span><span class="s2">&quot;long int&quot;</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DINDEX_TYPE</span><span class="p">:</span><span class="n">STRING</span><span class="o">=</span><span class="s2">&quot;long long&quot;</span>
+</pre></div>
+</div>
+<p>Similarly, the data type we use for a majority of the computations can be changed
+from the default type of <code class="docutils literal notranslate"><span class="pre">double</span></code> to <code class="docutils literal notranslate"><span class="pre">float</span></code> by adding the following</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DUSE_CRBC_SCALAR_FLOAT</span><span class="o">=</span><span class="s2">&quot;ON&quot;</span>
+</pre></div>
+</div>
+<p>and the coefficient data type can be changed from <code class="docutils literal notranslate"><span class="pre">double</span></code> to <code class="docutils literal notranslate"><span class="pre">float</span></code> with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DUSE_CRBC_COEF_FLOAT</span><span class="o">=</span><span class="s2">&quot;ON&quot;</span>
+</pre></div>
+</div>
+<p>Note that the underlying C++ code and interfaces is templated on the index and
+data types, so these commands only affect the C interfaces.</p>
+</div>
+<div class="section" id="save-and-restart">
+<h4>Save and Restart<a class="headerlink" href="#save-and-restart" title="Permalink to this headline">¶</a></h4>
+<p>The library includes the optional ability
+to save the state of the boundary updater and restart from a previously
+saved state. This functionality requires the use of the HDF5 library. To enable
+this function from the command line add the following to the CMake invocation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DUSE_HDF5_RESTARTS</span><span class="o">=</span><span class="n">ON</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="threading">
+<h4>Threading<a class="headerlink" href="#threading" title="Permalink to this headline">¶</a></h4>
+<p>Another option is to enable OpenMP threading. To do this, add</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DUSE_OPENMP</span><span class="o">=</span><span class="n">ON</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="debugging">
+<h4>Debugging<a class="headerlink" href="#debugging" title="Permalink to this headline">¶</a></h4>
+<p>To build in Debug mode, add</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DCMAKE_BUILD_TYPE</span><span class="o">=</span><span class="n">Debug</span>
+</pre></div>
+</div>
+<p>Some additionaly error checking and messages can be enabled with the option</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DENABLE_EXTRA_DEBUG</span><span class="o">=</span><span class="s2">&quot;ON&quot;</span>
+</pre></div>
+</div>
+<p>Note that builds with these options enabled significantly degrades performance.</p>
+</div>
+</div>
+<div class="section" id="linking">
+<h3>Linking<a class="headerlink" href="#linking" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="cmake-linking">
+<h4>CMake Linking<a class="headerlink" href="#cmake-linking" title="Permalink to this headline">¶</a></h4>
+<p>In order to link with Cmake, a <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> file should include</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">find_package</span><span class="p">(</span><span class="n">yeecrbc</span> <span class="n">REQUIRED</span><span class="p">)</span>
+<span class="n">target_link_libraries</span><span class="p">(</span><span class="n">foo</span> <span class="n">yeecrbc</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Depending on the install location Cmake may or may not be able to locate the
+libraries configuration file. If it is not found, the variable <code class="docutils literal notranslate"><span class="pre">yeecrbc_DIR</span></code>
+needs to be set to the install location. Using the default install settings this
+can be done with the following CMake command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">Dyeecrbc_DIR</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">lib</span>
+</pre></div>
+</div>
+<p>Alternatively, this can be set in the <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> file by adding</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span><span class="p">(</span><span class="n">yeecrbc_DIR</span> <span class="s2">&quot;/usr/local/lib&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="manual-linking">
+<h4>Manual Linking<a class="headerlink" href="#manual-linking" title="Permalink to this headline">¶</a></h4>
+<p>To link to the library, add <code class="docutils literal notranslate"><span class="pre">-lyeecrbc</span></code> to the compile string. If the library
+was not installed in a standard path, it is necessary to provide the path to
+the library and the header files. For example, using the typical default install
+settings</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">L</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">lib</span> <span class="o">-</span><span class="n">lyeecrbc</span> <span class="o">-</span><span class="n">I</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">yeecrbc</span>
+</pre></div>
+</div>
+<p>Since the majority of the library is written in C++, <code class="docutils literal notranslate"><span class="pre">-lstdc++</span></code> is often needed
+to compile.</p>
+<p>If the HDF5 restart capability is enabled, the HDF library also needs
+to be included in the linking. Typically, this is done with <code class="docutils literal notranslate"><span class="pre">-lhdf5</span></code>. If the
+threading is enabled, the appropriate OpenMP compiler flag needs to be included.
+For the GNU compilers, the flag is <code class="docutils literal notranslate"><span class="pre">-fopenmp</span></code>; for Intel compilers, the flag
+is <code class="docutils literal notranslate"><span class="pre">-openmp</span></code>; and for Portland Group compilers, the flag is <code class="docutils literal notranslate"><span class="pre">-mp</span></code>.</p>
+</div>
+<div class="section" id="running-dynamically-linked-executables">
+<h4>Running Dynamically Linked Executables<a class="headerlink" href="#running-dynamically-linked-executables" title="Permalink to this headline">¶</a></h4>
+<p>When using the shared version of the library, it may be necessary to provide the
+path to the library when executing a program. There are a number of way to do
+this, but the easiest way to do this is to specify the LD_LIBRARY_PATH. For
+example (in bash)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="uninstalling">
+<h2>Uninstalling<a class="headerlink" href="#uninstalling" title="Permalink to this headline">¶</a></h2>
+<p>To uninstall the library, simply delete the file <code class="docutils literal notranslate"><span class="pre">/usr/local/lib/libyeecrbc.a</span></code>
+and the folder <code class="docutils literal notranslate"><span class="pre">/usr/local/include/yeecrbc</span></code>. Note that the location of the include
+folder and the library file may vary from system to system and depends on the
+install configurations. In general the paths are <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;/lib/libyeecrbc.a</span></code>
+and <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;/include/crbc</span></code>.</p>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+<div id="sourcelink">
+  <a href="../_sources/YeeCRBC/install.rst.txt"
+     rel="nofollow">Source</a>
+</div>
+      
+    </p>
+    <p>
+    <a href="../contrib.html">rbcpack Contributors </a><br />
+        &copy; Copyright 2015-2016, rbcpack.org.<br/>
+    </p>
+  </div>
+</footer>
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-71984541-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+</html>
