@@ -1,0 +1,9 @@
+# This file creates the cmake file for the examples
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+
+# this is so Cmake knows where to find the yeecrbc library
+set(yeecrbc_DIR "@yeecrbc_DIR@")
+
+ADD_SUBDIRECTORY(2d_yee)
+ADD_SUBDIRECTORY(3d_yee)
+ADD_SUBDIRECTORY(wave_cxx)

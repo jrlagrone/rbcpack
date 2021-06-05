@@ -1,0 +1,33 @@
+                             Yee CRBC Library
+
+What is it?
+-----------
+
+The Yee CRBC Library provides an interface to the complete radiation boundary
+conditions of Hagstrom-Warburton (implemented as a double absorbing boundary 
+(DAB)) for use in finite-difference time-domain solvers based on the Yee scheme. 
+It is also capable of providing these boundary conditions to wave equations 
+using standard second order centered differencing methods.
+
+The Latest Version
+------------------
+
+The latest version can be found on the CRBC website rbcpack.org.
+
+Documentation
+-------------
+
+The documentation available at the time of release is available in HTML and PDF
+formats in the docs directory. The most up to date documentation can be found
+at rbcpack.org
+
+Installation
+------------
+
+Please see the file called INSTALL.
+
+Licensing
+---------
+
+Please see the file called LICENSE
+
