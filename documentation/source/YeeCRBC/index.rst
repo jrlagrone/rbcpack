@@ -36,7 +36,7 @@ Downloads and Respository
 The initial release can be download at :download:`yee_crbc_lib_1.0.0.tar.gz <yee_crbc_lib_1.0.0.tar.gz>`.
 
 The code is also hosted in a read only repository that may contain bug fixes and
-improvements between releases. `RBCPack Bitbucket Reposistory <https://github.com/jrlagrone/rbcpack>`_
+improvements between releases. `RBCPack github repository <https://github.com/jrlagrone/rbcpack>`_
 
 Licensing
 ^^^^^^^^^

@@ -161,7 +161,7 @@ We need the standard libraries for ``malloc()``, ``free()``, etc. ::
   #include <stdlib.h>   
 
 To get the 2D interface to the CRBC/DAB library  
-(see `2d_crbc_api.h <https://bitbucket.org/jlagrone/yee-crbc-testing/src/default/src/CRBC/2d_crbc_api.h?at=default/>`_) ::
+(see `2d_crbc_api.h <https://github.com/jrlagrone/rbcpack/blob/main/src/CRBC/2d_crbc_api.h?at=default/>`_) ::
 
   #include <2d_crbc_api.h>
 
