@@ -44,12 +44,12 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.bibtex',
-    'sphinxcontrib.spelling'
+    'sphinxcontrib.bibtex'
+    # 'sphinxcontrib.spelling'
 ]
 
-spelling_show_suggestions=True
-spelling_word_list_filename='spelling_wordlist.txt'
+# spelling_show_suggestions=True
+# spelling_word_list_filename='spelling_wordlist.txt'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -266,19 +266,19 @@ htmlhelp_basename = 'YeeCRBCLibrarydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+# latex_elements = {
+# # The paper size ('letterpaper' or 'a4paper').
+# #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+# # The font size ('10pt', '11pt' or '12pt').
+# #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-'preamble': '\usepackage{amsmath} \n'
-            '\usepackage{amsfonts} \n'
-            '\usepackage{amssymb} \n'
-            r'''\setcounter{tocdepth}{4}''', 
-}
+# # Additional stuff for the LaTeX preamble.
+# 'preamble': '\usepackage{amsmath} \n'
+#             '\usepackage{amsfonts} \n'
+#             '\usepackage{amssymb} \n'
+#             r'''\setcounter{tocdepth}{4}''',
+# }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
