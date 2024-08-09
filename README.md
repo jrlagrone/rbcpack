@@ -7,7 +7,7 @@ Notable features of RBCPack are
 * *a priori* error estimates
 * optimal selection of parameters given a desired tolerance
 
-More details are available at [rbcpack.org](http://www.rbcpack.org)
+More details are available at [rbcpack.com](http://www.rbcpack.com)
 
 ### How do I get set up? ###
 
